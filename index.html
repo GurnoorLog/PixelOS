@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PixelOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="day">
+
+<div id="boot-screen">
+  <div class="boot-content">
+    <div class="boot-logo">
+      <span class="boot-logo-symbol">▲</span>
+      <span class="boot-title">PixelOS</span>
+    </div>
+    <div class="boot-loader-track">
+      <div class="boot-loader-fill" id="boot-loader"></div>
+    </div>
+    <div class="boot-messages">
+      <span class="boot-msg" id="boot-msg">initializing pixel engine...</span>
+    </div>
+  </div>
+</div>
+
+<div id="bg-gradient"></div>
+<canvas id="particle-canvas"></canvas>
+<canvas id="rain-canvas"></canvas>
+
+<header id="top-bar">
+  <div class="top-left">
+    <button id="start-btn" aria-label="Start Menu">▲ PixelOS</button>
+  </div>
+  <span id="status-text" class="glitch" data-text="// PixelOS — pixel meets glass">// PixelOS — pixel meets glass</span>
+  <div class="top-right">
+    <button id="theme-toggle" aria-label="Toggle Day/Night" title="Toggle Day/Night">☀️</button>
+    <span id="clock">00:00:00</span>
+  </div>
+</header>
+
+<div id="start-menu" class="glass-panel closed">
+  <div class="start-item" data-app="lofi"><canvas class="start-icon" data-sprite="coffee"></canvas><span>Lo-Fi Cafe</span></div>
+  <div class="start-item" data-app="diary"><canvas class="start-icon" data-sprite="diary"></canvas><span>Glass Diary</span></div>
+  <div class="start-item" data-app="pixel-editor"><canvas class="start-icon" data-sprite="paint"></canvas><span>Pixel Editor</span></div>
+  <div class="start-item" data-app="browser"><canvas class="start-icon" data-sprite="globe"></canvas><span>Nexus Browser</span></div>
+  <div class="start-item" data-app="calc"><canvas class="start-icon" data-sprite="calc"></canvas><span>Calculator</span></div>
+  <div class="start-divider"></div>
+  <div class="start-item" id="start-about"><span>▲ About PixelOS</span></div>
+  <div class="start-item" id="start-settings"><span>⚙ Settings</span></div>
+</div>
+
+<main id="desktop">
+
+  <div class="desktop-icons">
+    <div class="desk-icon" data-app="lofi" title="Lo-Fi Cafe">
+      <canvas class="desk-sprite" data-sprite="coffee"></canvas>
+      <span>CAFE</span>
+    </div>
+    <div class="desk-icon" data-app="diary" title="Glass Diary">
+      <canvas class="desk-sprite" data-sprite="diary"></canvas>
+      <span>DIARY</span>
+    </div>
+    <div class="desk-icon" data-app="pixel-editor" title="Pixel Editor">
+      <canvas class="desk-sprite" data-sprite="paint"></canvas>
+      <span>EDITOR</span>
+    </div>
+    <div class="desk-icon" data-app="browser" title="Nexus Browser">
+      <canvas class="desk-sprite" data-sprite="globe"></canvas>
+      <span>BROWSER</span>
+    </div>
+    <div class="desk-icon" data-app="calc" title="Calculator">
+      <canvas class="desk-sprite" data-sprite="calc"></canvas>
+      <span>CALC</span>
+    </div>
+  </div>
+
+  <!-- DESKTOP WIDGETS -->
+  <div class="desktop-widgets">
+    <div class="widget glass-panel" id="widget-clock">
+      <canvas id="clock-canvas" width="140" height="140"></canvas>
+    </div>
+    <div class="widget glass-panel" id="widget-calendar">
+      <div class="cal-header">
+        <button class="cal-nav" id="cal-prev">◀</button>
+        <span class="cal-month-year" id="cal-month-year"></span>
+        <button class="cal-nav" id="cal-next">▶</button>
+      </div>
+      <div class="cal-days-header">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- DESKTOP SEARCH BAR -->
+  <div class="desktop-search glass-panel">
+    <input type="text" id="desktop-search-input" placeholder="search Wikipedia..." spellcheck="false">
+    <button class="pixel-btn" id="desktop-search-btn">🔍</button>
+  </div>
+
+  <!-- WINDOW 1: Lo-Fi Cafe -->
+  <div class="window" data-app="lofi" style="top:55px;left:40px;width:400px;height:340px;z-index:10;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="coffee"></canvas> Lo-Fi Cafe</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="lofi-player">
+        <div class="player-tabs">
+          <button class="player-tab active" data-source="radio">▶ RADIO</button>
+          <button class="player-tab" data-source="spotify">◉ SPOTIFY</button>
+        </div>
+        <div id="stream-container" class="player-embed-container active">
+          <div class="lofi-presets">
+            <span class="pixel-text presets-label">RADIO STREAMS</span>
+            <div class="preset-row">
+              <button class="pixel-btn preset-btn" data-stream="https://ice2.somafm.com/groovesalad-256-mp3">🎧 Groove Salad</button>
+              <button class="pixel-btn preset-btn" data-stream="https://ice2.somafm.com/defcon-256-mp3">🌀 DEF CON</button>
+              <button class="pixel-btn preset-btn" data-stream="https://ice1.somafm.com/chill-256-mp3">🌙 Soma Chill</button>
+              <button class="pixel-btn preset-btn" data-stream="https://ice1.somafm.com/illstreet-256-mp3">🌆 Illinois St</button>
+            </div>
+          </div>
+          <div id="player-embed" class="player-embed">
+            <span class="pixel-text" style="font-size:6px;color:var(--text-secondary);opacity:0.5;display:block;text-align:center;padding:20px;">select a radio stream above</span>
+          </div>
+        </div>
+        <div id="spotify-embed-container" class="player-embed-container">
+          <div class="spotify-placeholder">
+            <span class="pixel-text">paste a Spotify track/playlist URL</span>
+            <div class="spotify-url-row">
+              <input type="text" id="spotify-url-input" placeholder="https://open.spotify.com/track/..." spellcheck="false">
+              <button class="pixel-btn" id="spotify-load-btn">LOAD</button>
+            </div>
+          </div>
+        </div>
+        <div class="visualizer" id="visualizer">
+          <div class="bar" style="--h:55%;--d:0s;"></div>
+          <div class="bar" style="--h:80%;--d:0.1s;"></div>
+          <div class="bar" style="--h:40%;--d:0.2s;"></div>
+          <div class="bar" style="--h:95%;--d:0.3s;"></div>
+          <div class="bar" style="--h:60%;--d:0.4s;"></div>
+          <div class="bar" style="--h:30%;--d:0.5s;"></div>
+          <div class="bar" style="--h:75%;--d:0.6s;"></div>
+          <div class="bar" style="--h:50%;--d:0.7s;"></div>
+          <div class="bar" style="--h:85%;--d:0.8s;"></div>
+          <div class="bar" style="--h:45%;--d:0.9s;"></div>
+          <div class="bar" style="--h:70%;--d:1.0s;"></div>
+          <div class="bar" style="--h:35%;--d:1.1s;"></div>
+          <div class="bar" style="--h:90%;--d:1.2s;"></div>
+          <div class="bar" style="--h:55%;--d:1.3s;"></div>
+          <div class="bar" style="--h:65%;--d:1.4s;"></div>
+          <div class="bar" style="--h:40%;--d:1.5s;"></div>
+        </div>
+        <div class="lofi-info">
+          <div class="now-playing-info">
+            <span class="pixel-text now-playing" id="now-playing">♪ select a preset</span>
+            <span class="pixel-text now-playing-sub" id="now-playing-sub"></span>
+          </div>
+          <div class="lofi-controls">
+            <button class="pixel-btn" id="play-btn">▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 2: Glass Diary -->
+  <div class="window" data-app="diary" style="top:100px;left:480px;width:400px;height:340px;z-index:8;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="diary"></canvas> Glass Diary</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="diary-container">
+        <div class="diary-toolbar">
+          <span class="pixel-text diary-date"></span>
+          <span class="pixel-text diary-char-count">0 chars</span>
+        </div>
+        <textarea class="diary-input" placeholder="type your thoughts here...&#10;&#10;every character echoes in glass." spellcheck="false"></textarea>
+        <div class="diary-footer">
+          <button class="pixel-btn" id="diary-clear">⌫ CLEAR</button>
+          <button class="pixel-btn" id="diary-export">↓ EXPORT</button>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 3: Pixel Editor -->
+  <div class="window" data-app="pixel-editor" style="top:70px;left:920px;width:340px;height:380px;z-index:9;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="paint"></canvas> Pixel Editor</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="pixel-editor-container">
+        <div class="editor-toolbar">
+          <div class="editor-colors" id="editor-colors">
+            <button class="color-swatch" style="background:#000" data-color="#000000"></button>
+            <button class="color-swatch" style="background:#fff" data-color="#ffffff"></button>
+            <button class="color-swatch" style="background:#ff6b9d" data-color="#ff6b9d"></button>
+            <button class="color-swatch" style="background:#c084fc" data-color="#c084fc"></button>
+            <button class="color-swatch" style="background:#60a5fa" data-color="#60a5fa"></button>
+            <button class="color-swatch" style="background:#34d399" data-color="#34d399"></button>
+            <button class="color-swatch" style="background:#fbbf24" data-color="#fbbf24"></button>
+            <button class="color-swatch" style="background:#fb923c" data-color="#fb923c"></button>
+            <button class="color-swatch" style="background:#ef4444" data-color="#ef4444"></button>
+            <button class="color-swatch" style="background:#8b5cf6" data-color="#8b5cf6"></button>
+          </div>
+          <div class="editor-tools">
+            <button class="pixel-btn editor-tool active" data-tool="pen">✏️</button>
+            <button class="pixel-btn editor-tool" data-tool="eraser">🧹</button>
+            <button class="pixel-btn editor-tool" data-tool="fill">🪣</button>
+            <button class="pixel-btn" id="editor-clear">🗑️</button>
+            <button class="pixel-btn" id="editor-export">↓</button>
+          </div>
+        </div>
+        <div class="editor-canvas-wrap">
+          <canvas id="editor-canvas" width="256" height="256"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 4: Nexus Browser -->
+  <div class="window" data-app="browser" style="top:140px;left:220px;width:560px;height:400px;z-index:7;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="globe"></canvas> Nexus Browser</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="browser-container">
+        <div class="browser-toolbar">
+          <input type="text" class="browser-input" id="browser-input" placeholder="search Wikipedia..." value="">
+          <button class="pixel-btn" id="browser-go">GO ▸</button>
+          <button class="pixel-btn" id="browser-back" title="Back">◂</button>
+        </div>
+        <div class="browser-frame-container">
+          <div class="browser-content" id="browser-content">
+            <div class="browser-welcome" id="browser-welcome">
+              <span class="pixel-text wiki-welcome-icon">📖</span>
+              <span class="pixel-text wiki-welcome-title">WIKIPEDIA VIEWER</span>
+              <span class="pixel-text wiki-welcome-sub">search any article to read</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 5: Calculator -->
+  <div class="window" data-app="calc" style="top:120px;left:620px;width:280px;height:340px;z-index:6;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="calc"></canvas> Calculator</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="calc-container">
+        <div class="calc-display" id="calc-display">0</div>
+        <div class="calc-sub" id="calc-sub"></div>
+        <div class="calc-buttons">
+          <button class="calc-btn calc-op" data-v="C">C</button>
+          <button class="calc-btn calc-op" data-v="±">±</button>
+          <button class="calc-btn calc-op" data-v="%">%</button>
+          <button class="calc-btn calc-op" data-v="÷">÷</button>
+
+          <button class="calc-btn calc-num" data-v="7">7</button>
+          <button class="calc-btn calc-num" data-v="8">8</button>
+          <button class="calc-btn calc-num" data-v="9">9</button>
+          <button class="calc-btn calc-op" data-v="×">×</button>
+
+          <button class="calc-btn calc-num" data-v="4">4</button>
+          <button class="calc-btn calc-num" data-v="5">5</button>
+          <button class="calc-btn calc-num" data-v="6">6</button>
+          <button class="calc-btn calc-op" data-v="-">−</button>
+
+          <button class="calc-btn calc-num" data-v="1">1</button>
+          <button class="calc-btn calc-num" data-v="2">2</button>
+          <button class="calc-btn calc-num" data-v="3">3</button>
+          <button class="calc-btn calc-op" data-v="+">+</button>
+
+          <button class="calc-btn calc-num calc-span2" data-v="0">0</button>
+          <button class="calc-btn calc-num" data-v=".">.</button>
+          <button class="calc-btn calc-eq" data-v="=">=</button>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+</main>
+
+<footer id="dock">
+  <div class="dock-icon" data-app="lofi" title="Lo-Fi Cafe">
+    <canvas class="dock-sprite" data-sprite="coffee"></canvas>
+    <span class="dock-label">CAFE</span>
+  </div>
+  <div class="dock-icon" data-app="diary" title="Glass Diary">
+    <canvas class="dock-sprite" data-sprite="diary"></canvas>
+    <span class="dock-label">DIARY</span>
+  </div>
+  <div class="dock-icon" data-app="pixel-editor" title="Pixel Editor">
+    <canvas class="dock-sprite" data-sprite="paint"></canvas>
+    <span class="dock-label">DRAW</span>
+  </div>
+  <div class="dock-icon" data-app="browser" title="Nexus Browser">
+    <canvas class="dock-sprite" data-sprite="globe"></canvas>
+    <span class="dock-label">BROWSER</span>
+  </div>
+  <div class="dock-icon" data-app="calc" title="Calculator">
+    <canvas class="dock-sprite" data-sprite="calc"></canvas>
+    <span class="dock-label">CALC</span>
+  </div>
+</footer>
+
+<div id="about-modal" class="glass-panel closed">
+  <div class="about-content">
+    <span class="pixel-text about-title">▲ PixelOS</span>
+    <span class="pixel-text about-sub">for Hack Club Stardance</span>
+    <p>An ultra-premium WebOS blending advanced glassmorphism with retro 8-bit pixel aesthetics. Fully customizable — colors, effects, everything.</p>
+    <p>Drag windows · Toggle day/night · Browse Wikipedia · Pet the pet.</p>
+    <button class="pixel-btn" id="about-close">CLOSE</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="glass-panel closed">
+  <div class="settings-content">
+    <span class="pixel-text settings-title">⚙ SETTINGS</span>
+
+    <div class="settings-section">
+      <span class="settings-label">ACCENT COLOR</span>
+      <div class="settings-color-row">
+        <input type="color" id="setting-accent" value="#ff6b9d">
+        <button class="pixel-btn color-preset" style="background:#ff6b9d" data-color="#ff6b9d"></button>
+        <button class="pixel-btn color-preset" style="background:#c084fc" data-color="#c084fc"></button>
+        <button class="pixel-btn color-preset" style="background:#60a5fa" data-color="#60a5fa"></button>
+        <button class="pixel-btn color-preset" style="background:#34d399" data-color="#34d399"></button>
+        <button class="pixel-btn color-preset" style="background:#fbbf24" data-color="#fbbf24"></button>
+        <button class="pixel-btn color-preset" style="background:#fb923c" data-color="#fb923c"></button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <span class="settings-label">EFFECTS</span>
+      <div class="settings-toggle-row">
+        <span>Rain</span>
+        <label class="toggle"><input type="checkbox" id="setting-rain" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-toggle-row">
+        <span>Particles</span>
+        <label class="toggle"><input type="checkbox" id="setting-particles" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-toggle-row">
+        <span>Sparkles</span>
+        <label class="toggle"><input type="checkbox" id="setting-sparkles" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <span class="settings-label">GLASS INTENSITY</span>
+      <div class="settings-slider-row">
+        <span>4px</span>
+        <input type="range" min="4" max="32" value="16" id="setting-blur">
+        <span>32px</span>
+      </div>
+    </div>
+
+    <div class="settings-footer">
+      <button class="pixel-btn" id="settings-reset">↺ RESET</button>
+      <button class="pixel-btn" id="settings-close">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
