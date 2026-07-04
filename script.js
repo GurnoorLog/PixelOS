@@ -249,6 +249,36 @@
     desktop = document.getElementById('desktop');
     if (!desktop) return;
 
+    var maximizeState = null;
+
+    document.addEventListener('dblclick', function (e) {
+      var header = e.target.closest('.window-header');
+      if (!header) return;
+      var win = header.closest('.window');
+      if (!win || win.classList.contains('minimized')) return;
+      if (maximizeState === win) {
+        win.style.left = maximizeState.left;
+        win.style.top = maximizeState.top;
+        win.style.width = maximizeState.width;
+        win.style.height = maximizeState.height;
+        maximizeState = null;
+      } else {
+        maximizeState = {
+          left: win.style.left,
+          top: win.style.top,
+          width: win.style.width,
+          height: win.style.height,
+          win: win,
+        };
+        var dRect = desktop.getBoundingClientRect();
+        win.style.left = '0px';
+        win.style.top = '0px';
+        win.style.width = dRect.width + 'px';
+        win.style.height = dRect.height + 'px';
+      }
+      bringToFront(win);
+    });
+
     document.addEventListener('mousedown', function (e) {
       var header = e.target.closest('.window-header');
       if (!header) return;
@@ -388,6 +418,11 @@
     var minBtn = win.querySelector('.win-min');
     if (minBtn) minBtn.textContent = '─';
     bringToFront(win);
+    // Auto-focus calculator input
+    if (app === 'calc') {
+      var ci = document.getElementById('calc-input');
+      if (ci) setTimeout(function () { ci.focus(); }, 100);
+    }
   }
 
   /* -------------------------------------------------------
@@ -885,110 +920,102 @@
       APP: CALCULATOR
   ------------------------------------------------------- */
   function initCalc() {
+    var input = document.getElementById('calc-input');
     var display = document.getElementById('calc-display');
-    var sub = document.getElementById('calc-sub');
-    if (!display) return;
+    var sciRows = document.getElementById('calc-sci-rows');
+    if (!input) return;
 
-    var current = '0';
-    var prev = '';
-    var operation = null;
-    var resetNext = false;
-
-    function updateDisplay() {
-      display.textContent = current.length > 14 ? parseFloat(current).toExponential(4) : current;
-    }
-
-    function updateSub(text) {
-      if (sub) sub.textContent = text || '';
-    }
-
-    function handleButton(val) {
-      if (val === 'C') {
-        current = '0';
-        prev = '';
-        operation = null;
-        resetNext = false;
-        updateSub('');
-        updateDisplay();
-        return;
-      }
-
-      if (val === '±') {
-        current = String(parseFloat(current) * -1);
-        updateDisplay();
-        return;
-      }
-
-      if (val === '%') {
-        current = String(parseFloat(current) / 100);
-        updateDisplay();
-        return;
-      }
-
-      if (val === '=') {
-        if (!operation || !prev) return;
-        var result = calculate(parseFloat(prev), parseFloat(current), operation);
-        updateSub(prev + ' ' + opSymbol(operation) + ' ' + current + ' =');
-        current = String(result);
-        operation = null;
-        prev = '';
-        resetNext = true;
-        updateDisplay();
-        return;
-      }
-
-      if (['+', '-', '×', '÷'].indexOf(val) !== -1) {
-        if (operation && !resetNext) {
-          prev = String(calculate(parseFloat(prev), parseFloat(current), operation));
-          current = '0';
-          updateDisplay();
-          updateSub(prev + ' ' + opSymbol(val));
-          operation = val;
-          return;
-        }
-        prev = current;
-        operation = val;
-        resetNext = false;
-        updateSub(current + ' ' + opSymbol(val));
-        return;
-      }
-
-      // Number or decimal
-      if (resetNext) {
-        current = '0';
-        resetNext = false;
-        updateSub('');
-      }
-
-      if (val === '.') {
-        if (current.indexOf('.') === -1) current += '.';
-      } else {
-        if (current === '0') current = '';
-        current += val;
-      }
-      updateDisplay();
-    }
-
-    function calculate(a, b, op) {
-      switch (op) {
-        case '+': return a + b;
-        case '-': return a - b;
-        case '×': return a * b;
-        case '÷': return b !== 0 ? a / b : 'ERR';
-      }
-      return b;
-    }
-
-    function opSymbol(op) {
-      return op;
-    }
-
-    document.querySelectorAll('.calc-btn').forEach(function (btn) {
+    /* ---------- mode toggle ---------- */
+    document.querySelectorAll('.calc-mode-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var val = this.getAttribute('data-v');
-        if (val) handleButton(val);
+        document.querySelectorAll('.calc-mode-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        if (sciRows) sciRows.classList.toggle('open', btn.getAttribute('data-mode') === 'sci');
       });
     });
+
+    /* ---------- eval with Math support ---------- */
+    function evalExpr(expr) {
+      var s = expr;
+      s = s.replace(/π/g, 'Math.PI');
+      var funcs = { sin:'Math.sin', cos:'Math.cos', tan:'Math.tan', log:'Math.log10', ln:'Math.log', sqrt:'Math.sqrt' };
+      for (var f in funcs) {
+        s = s.replace(new RegExp(f + '\\(', 'g'), funcs[f] + '(');
+      }
+      s = s.replace(/([\d.]+)!/g, 'fact($1)');
+      s = s.replace(/[^0-9+\-*/.()% a-zA-Z,]/g, '');
+      if (!s) return '';
+      try {
+        var fact = function (n) { return n <= 1 ? 1 : n * fact(n - 1); };
+        var result = Function('fact', '"use strict"; return (' + s + ')')(fact);
+        if (!isFinite(result)) return 'ERR';
+        return String(parseFloat(result.toFixed(10)));
+      } catch (e) {
+        return 'ERR';
+      }
+    }
+
+    function evaluate() {
+      var expr = input.value.trim();
+      if (!expr) return;
+      var result = evalExpr(expr);
+      display.textContent = result;
+      input.value = result !== 'ERR' ? result : expr;
+      if (result !== 'ERR') input.select();
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        evaluate();
+      }
+    });
+
+    input.addEventListener('input', function () {
+      display.textContent = input.value || '0';
+    });
+
+    document.querySelectorAll('.calc-btn, .calc-sci').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var v = this.getAttribute('data-v');
+        if (!v) return;
+
+        if (v === 'C') {
+          input.value = '';
+          display.textContent = '0';
+          input.focus();
+          return;
+        }
+
+        if (v === '=') {
+          evaluate();
+          return;
+        }
+
+        if (v === '±') {
+          var expr = input.value.trim();
+          if (/^-?[\d.]+$/.test(expr)) {
+            input.value = expr.startsWith('-') ? expr.slice(1) : '-' + expr;
+            display.textContent = input.value;
+          }
+          input.focus();
+          return;
+        }
+
+        if (v === '**2' || v === '**3') {
+          input.value = '(' + (input.value || '0') + ')' + v;
+          display.textContent = input.value;
+          input.focus();
+          return;
+        }
+
+        input.value += v;
+        display.textContent = input.value;
+        input.focus();
+      });
+    });
+
+    input.focus();
   }
 
   /* -------------------------------------------------------
@@ -1267,34 +1294,35 @@
   ------------------------------------------------------- */
   function initBootScreen() {
     var boot = document.getElementById('boot-screen');
-    var loader = document.getElementById('boot-loader');
-    var msg = document.getElementById('boot-msg');
     if (!boot) return;
-    var messages = [
-      'initializing pixel engine...',
-      'mounting glass filesystem...',
-      'loading sprite database...',
-      'calibrating blur kernels...',
-      'warming up neon tubes...',
-      'PixelOS ready.'
+
+    var bootMessages = [
+      ' pixel engine...      [OK]',
+      ' glass filesystem...  [OK]',
+      ' sprite database...   [OK]',
+      ' blur kernels...      [OK]',
+      ' neon tubes...        [OK]',
+      ' window manager...    [OK]',
+      ' pixel rain...        [OK]',
+      ' systems operational. [OK]',
     ];
-    var progress = 0;
-    var msgIdx = 0;
-    var interval = setInterval(function () {
-      progress += 8 + Math.floor(Math.random() * 12);
-      if (loader) loader.style.width = Math.min(progress, 100) + '%';
-      if (progress >= 20 && msgIdx === 0) { msgIdx = 1; if (msg) msg.textContent = messages[1]; }
-      if (progress >= 40 && msgIdx === 1) { msgIdx = 2; if (msg) msg.textContent = messages[2]; }
-      if (progress >= 55 && msgIdx === 2) { msgIdx = 3; if (msg) msg.textContent = messages[3]; }
-      if (progress >= 75 && msgIdx === 3) { msgIdx = 4; if (msg) msg.textContent = messages[4]; }
-      if (progress >= 95 && msgIdx === 4) { msgIdx = 5; if (msg) msg.textContent = messages[5]; }
-      if (progress >= 100) {
-        clearInterval(interval);
-        setTimeout(function () {
-          boot.classList.add('done');
-        }, 400);
-      }
-    }, 200);
+
+    bootMessages.forEach(function (msg, i) {
+      var el = document.getElementById('term-line' + (i + 2));
+      setTimeout(function () {
+        if (!el) return;
+        el.textContent = msg;
+      }, 300 + i * 200);
+    });
+
+    setTimeout(function () {
+      var cursorLine = document.getElementById('term-line10');
+      if (cursorLine) cursorLine.innerHTML = '│ PixelOS ready. <span class="term-cursor">█</span>';
+    }, 2200);
+
+    setTimeout(function () {
+      boot.classList.add('done');
+    }, 2800);
   }
 
   /* -------------------------------------------------------
@@ -1454,15 +1482,23 @@
   /* -------------------------------------------------------
      ACTIVE WINDOW GLOW — update bringToFront
   ------------------------------------------------------- */
-  // Override the original bringToFront to add glow effect
+  // Override the original bringToFront to add glow + dock indicator
   var origBringToFront = bringToFront;
   bringToFront = function (win) {
     document.querySelectorAll('.window').forEach(function (w) {
       w.classList.remove('active-glow');
     });
+    document.querySelectorAll('.dock-icon').forEach(function (d) {
+      d.classList.remove('active');
+    });
     if (win) {
       win.classList.add('active-glow');
       origBringToFront(win);
+      var app = win.getAttribute('data-app');
+      if (app) {
+        var dockIcon = document.querySelector('.dock-icon[data-app="' + app + '"]');
+        if (dockIcon) dockIcon.classList.add('active');
+      }
     }
   };
 

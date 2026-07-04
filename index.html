@@ -12,16 +12,19 @@
 <body data-theme="day">
 
 <div id="boot-screen">
-  <div class="boot-content">
-    <div class="boot-logo">
-      <span class="boot-logo-symbol">▲</span>
-      <span class="boot-title">PixelOS</span>
-    </div>
-    <div class="boot-loader-track">
-      <div class="boot-loader-fill" id="boot-loader"></div>
-    </div>
-    <div class="boot-messages">
-      <span class="boot-msg" id="boot-msg">initializing pixel engine...</span>
+  <div class="boot-terminal">
+    <div class="term-frame">
+      <div class="term-line" id="term-line0">▲ PixelOS v1.0</div>
+      <div class="term-line" id="term-line1"></div>
+      <div class="term-line" id="term-line2"></div>
+      <div class="term-line" id="term-line3"></div>
+      <div class="term-line" id="term-line4"></div>
+      <div class="term-line" id="term-line5"></div>
+      <div class="term-line" id="term-line6"></div>
+      <div class="term-line" id="term-line7"></div>
+      <div class="term-line" id="term-line8"></div>
+      <div class="term-line" id="term-line9"></div>
+      <div class="term-line" id="term-line10"><span class="term-cursor">█</span></div>
     </div>
   </div>
 </div>
@@ -267,7 +270,7 @@
   </div>
 
   <!-- WINDOW 5: Calculator -->
-  <div class="window" data-app="calc" style="top:120px;left:620px;width:280px;height:340px;z-index:6;">
+  <div class="window" data-app="calc" style="top:60px;left:620px;width:290px;height:480px;z-index:6;">
     <div class="window-header">
       <span class="window-title"><canvas class="win-icon" data-sprite="calc"></canvas> Calculator</span>
       <div class="window-controls">
@@ -277,18 +280,47 @@
     </div>
     <div class="window-body">
       <div class="calc-container">
-        <div class="calc-display" id="calc-display">0</div>
-        <div class="calc-sub" id="calc-sub"></div>
+        <div class="calc-input-wrap">
+          <input type="text" class="calc-input" id="calc-input" placeholder="type expression..." autocomplete="off" spellcheck="false">
+          <div class="calc-display" id="calc-display">0</div>
+        </div>
+        <div class="calc-mode-bar">
+          <button class="calc-mode-btn active" data-mode="basic">Basic</button>
+          <button class="calc-mode-btn" data-mode="sci">Scientific</button>
+        </div>
+        <div class="calc-sci-rows" id="calc-sci-rows">
+          <div class="calc-sci-row">
+            <button class="calc-btn calc-sci" data-v="sin(">sin</button>
+            <button class="calc-btn calc-sci" data-v="cos(">cos</button>
+            <button class="calc-btn calc-sci" data-v="tan(">tan</button>
+            <button class="calc-btn calc-sci" data-v="log(">log</button>
+            <button class="calc-btn calc-sci" data-v="ln(">ln</button>
+          </div>
+          <div class="calc-sci-row">
+            <button class="calc-btn calc-sci" data-v="sqrt(">√</button>
+            <button class="calc-btn calc-sci" data-v="**2">x²</button>
+            <button class="calc-btn calc-sci" data-v="**3">x³</button>
+            <button class="calc-btn calc-sci" data-v="**">x^y</button>
+            <button class="calc-btn calc-sci" data-v="*Math.PI">π</button>
+          </div>
+          <div class="calc-sci-row">
+            <button class="calc-btn calc-sci" data-v="(">(</button>
+            <button class="calc-btn calc-sci" data-v=")">)</button>
+            <button class="calc-btn calc-sci" data-v="*Math.E">e</button>
+            <button class="calc-btn calc-sci" data-v="!">!</button>
+            <button class="calc-btn calc-sci" data-v="1/(">1/x</button>
+          </div>
+        </div>
         <div class="calc-buttons">
           <button class="calc-btn calc-op" data-v="C">C</button>
           <button class="calc-btn calc-op" data-v="±">±</button>
           <button class="calc-btn calc-op" data-v="%">%</button>
-          <button class="calc-btn calc-op" data-v="÷">÷</button>
+          <button class="calc-btn calc-op" data-v="/">÷</button>
 
           <button class="calc-btn calc-num" data-v="7">7</button>
           <button class="calc-btn calc-num" data-v="8">8</button>
           <button class="calc-btn calc-num" data-v="9">9</button>
-          <button class="calc-btn calc-op" data-v="×">×</button>
+          <button class="calc-btn calc-op" data-v="*">×</button>
 
           <button class="calc-btn calc-num" data-v="4">4</button>
           <button class="calc-btn calc-num" data-v="5">5</button>

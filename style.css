@@ -13,7 +13,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   font-family: 'Press Start 2P', monospace;
-  cursor: default;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' shape-rendering='crispEdges'%3E%3Cpolygon points='0,0 10,10 5,10 10,15 7,15 2,10 0,10' fill='%23f0f0f0' stroke='%23444' stroke-width='0.7' stroke-linejoin='miter'/%3E%3C/svg%3E") 0 0, default;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -150,73 +150,55 @@ body[data-theme="night"] #rain-canvas {
   align-items: center;
   justify-content: center;
   background: #0a0a1a;
-  transition: opacity 0.8s ease, visibility 0.8s ease;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 #boot-screen.done {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.boot-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-}
-.boot-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.boot-logo-symbol {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 32px;
-  color: #ff6b9d;
-  text-shadow: 0 0 40px rgba(255,107,157,0.5), 0 0 80px rgba(255,107,157,0.2);
-  animation: bootPulse 1.5s ease-in-out infinite;
-}
-.boot-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 18px;
-  color: #ffffff;
-  letter-spacing: 6px;
-  text-shadow: 0 0 20px rgba(192,132,252,0.3);
-}
-.boot-loader-track {
-  width: 240px;
-  height: 8px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
-  overflow: hidden;
-  padding: 1px;
-}
-.boot-loader-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #ff6b9d, #c084fc);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-  box-shadow: 0 0 20px rgba(255,107,157,0.3);
-}
-.boot-messages {
-  height: 20px;
-}
-.boot-msg {
+.boot-terminal {
+  width: 420px;
   font-family: 'Press Start 2P', monospace;
   font-size: 7px;
-  color: rgba(255,255,255,0.5);
-  letter-spacing: 2px;
-  animation: bootBlink 0.8s step-end infinite;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
 }
-@keyframes bootPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
+.term-frame {
+  background: rgba(0,0,0,0.55);
+  padding: 16px 14px;
+  border: 2px solid rgba(255,107,157,0.25);
+  box-shadow:
+    0 0 0 3px #0a0a1a,
+    0 0 0 5px rgba(255,107,157,0.15),
+    inset 0 0 0 1px rgba(255,107,157,0.1);
+  image-rendering: pixelated;
 }
-@keyframes bootBlink {
+.term-line {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: rgba(255,255,255,0.8);
+  line-height: 1.8;
+  min-height: 16px;
+  white-space: pre;
+  letter-spacing: 0.5px;
+}
+#term-line0 {
+  color: #ff6b9d;
+  font-size: 8px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 20px rgba(255,107,157,0.3);
+  letter-spacing: 1px;
+}
+.term-cursor {
+  display: inline-block;
+  animation: termBlink 0.6s step-end infinite;
+  color: var(--accent, #ff6b9d);
+  font-size: 8px;
+}
+@keyframes termBlink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50% { opacity: 0; }
 }
 
 /* --- TOP BAR --- */
@@ -1261,32 +1243,102 @@ body[data-theme="night"] #rain-canvas {
 .calc-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   height: 100%;
+}
+.calc-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.calc-input {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  outline: none;
+  letter-spacing: 1px;
+  width: 100%;
+}
+.calc-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(255,107,157,0.2);
+}
+.calc-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.4;
+  font-size: 7px;
 }
 .calc-display {
   font-family: var(--font-pixel);
-  font-size: 22px;
-  color: var(--text-primary);
+  font-size: 16px;
+  color: var(--accent2);
   text-align: right;
-  padding: 10px 12px;
-  background: rgba(0,0,0,0.25);
-  border: 1px solid var(--glass-border);
-  border-radius: 4px;
+  padding: 2px 10px 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   letter-spacing: 1px;
-  min-height: 44px;
+  min-height: 24px;
+  opacity: 0.8;
 }
-.calc-sub {
+.calc-mode-bar {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0;
+}
+.calc-mode-btn {
   font-family: var(--font-pixel);
   font-size: 7px;
+  padding: 4px 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
   color: var(--text-secondary);
-  text-align: right;
-  padding: 0 12px;
-  min-height: 14px;
-  opacity: 0.6;
+  cursor: pointer;
+}
+.calc-mode-btn.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.calc-sci-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease;
+}
+.calc-sci-rows.open {
+  max-height: 120px;
+}
+.calc-sci-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+.calc-sci {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  padding: 4px 2px;
+  color: var(--accent2);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  min-height: 28px;
+}
+.calc-sci:hover {
+  background: rgba(255,255,255,0.12);
+}
+.calc-sci:active {
+  transform: scale(0.95);
+  background: rgba(255,255,255,0.18);
 }
 .calc-buttons {
   display: grid;
@@ -1838,4 +1890,15 @@ body[data-theme="night"] .window.active-glow {
 }
 body[data-theme="night"] .dock-icon:hover .dock-sprite {
   filter: drop-shadow(0 0 16px rgba(180,120,255,0.5));
+}
+
+/* Pixel cursor for interactive elements */
+button, select, .dock-icon, .desk-icon, .start-item,
+.cal-nav, .color-swatch, .editor-tool, .pixel-btn, .win-min, .win-close,
+.preset-btn, .calc-btn, .calc-sci, .calc-mode-btn, .wiki-result-item, .window-header, a, .close-btn,
+.dropdown, .acc-preset {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='17' shape-rendering='crispEdges'%3E%3Cpolygon points='0,0 9,9 4,9 9,13 6,13 1,9 0,9' fill='%23c084fc' stroke='%23000' stroke-width='0.6' stroke-linejoin='miter'/%3E%3C/svg%3E") 0 0, pointer;
+}
+input, textarea {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='17' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='5' height='1' fill='%23f0f0f0'/%3E%3Crect x='0' y='16' width='5' height='1' fill='%23f0f0f0'/%3E%3Crect x='2' y='1' width='1' height='15' fill='%23f0f0f0'/%3E%3Crect x='0' y='0' width='5' height='1' fill='none' stroke='%23444' stroke-width='0.5'/%3E%3Crect x='0' y='16' width='5' height='1' fill='none' stroke='%23444' stroke-width='0.5'/%3E%3Crect x='2' y='1' width='1' height='15' fill='none' stroke='%23444' stroke-width='0.5'/%3E%3C/svg%3E") 2 8, text;
 }
