@@ -1478,7 +1478,7 @@
         t.closest('select') || t.closest('iframe') || t.closest('.dock-icon') ||
         t.closest('.sticky-note') || t.closest('.explorer-item') ||
         t.closest('.explorer-sidebar-item') || t.closest('.terminal-input') ||
-        t.closest('.notepad-container')) return;
+        t.closest('.notepad-container') || t.closest('.saveas-overlay')) return;
     createSparkles(e.clientX, e.clientY);
   });
 
@@ -2485,21 +2485,164 @@
     }
 
     function saveFile() {
-      var path = getFilePath();
-      if (!path) { setStatus('enter a filename'); return; }
-      var name = path.split('/').filter(Boolean).pop();
-      var content = textarea.value;
-      var existing = vfs.read(path);
-      if (existing !== null) {
-        vfs.write(path, content);
-      } else {
-        vfs.touch(path, content);
+      showSaveAsDialog();
+    }
+
+    function showSaveAsDialog() {
+      var existing = document.querySelector('.saveas-overlay');
+      if (existing) return;
+
+      function dirname(p) {
+        var parts = vfs.normalize(p).split('/').filter(Boolean);
+        parts.pop();
+        return '/' + parts.join('/') || '/';
       }
-      dirty = false;
-      currentFile = path;
-      filenameInput.value = name;
-      setStatus('saved: ' + name);
-      notify('File Saved', name, 'success');
+
+      var dialogPath = currentFile ? dirname(currentFile) : vfs.getPath();
+      var dialogName = currentFile ? currentFile.split('/').filter(Boolean).pop() : filenameInput.value.trim() || 'untitled.txt';
+
+      var overlay = document.createElement('div');
+      overlay.className = 'saveas-overlay';
+
+      var box = document.createElement('div');
+      box.className = 'saveas-dialog';
+
+      var title = document.createElement('div');
+      title.className = 'saveas-title';
+      title.textContent = '💾 Save As';
+      box.appendChild(title);
+
+      var pathBar = document.createElement('div');
+      pathBar.className = 'saveas-pathbar';
+      var pathSpan = document.createElement('span');
+      pathSpan.id = 'saveas-path';
+      pathSpan.textContent = dialogPath;
+      var upBtn = document.createElement('button');
+      upBtn.className = 'pixel-btn saveas-nav-btn';
+      upBtn.innerHTML = '⬆';
+      upBtn.title = 'Up one level';
+      upBtn.addEventListener('click', function () {
+        var parent = dirname(dialogPath);
+        if (parent !== dialogPath) {
+          dialogPath = parent;
+          renderSaveAsDir(dialogPath);
+        }
+      });
+      pathBar.appendChild(pathSpan);
+      pathBar.appendChild(upBtn);
+      box.appendChild(pathBar);
+
+      var dirList = document.createElement('div');
+      dirList.className = 'saveas-dirlist';
+      dirList.id = 'saveas-dirlist';
+      box.appendChild(dirList);
+
+      var nameRow = document.createElement('div');
+      nameRow.className = 'saveas-namerow';
+
+      var nameLabel = document.createElement('span');
+      nameLabel.textContent = 'File name:';
+      nameRow.appendChild(nameLabel);
+
+      var nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.className = 'saveas-nameinput';
+      nameInput.value = dialogName;
+      nameInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') doSave(dialogPath, nameInput);
+        if (e.key === 'Escape') overlay.remove();
+      });
+      nameRow.appendChild(nameInput);
+      box.appendChild(nameRow);
+
+      var btnRow = document.createElement('div');
+      btnRow.className = 'saveas-btnrow';
+
+      var saveBtn = document.createElement('button');
+      saveBtn.className = 'pixel-btn saveas-btn saveas-btn-primary';
+      saveBtn.textContent = 'Save';
+      saveBtn.addEventListener('click', function () { doSave(dialogPath, nameInput); });
+      btnRow.appendChild(saveBtn);
+
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className = 'pixel-btn saveas-btn';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', function () { overlay.remove(); });
+      btnRow.appendChild(cancelBtn);
+
+      box.appendChild(btnRow);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) overlay.remove();
+      });
+
+      renderSaveAsDir(dialogPath);
+
+      function renderSaveAsDir(dirPath) {
+        var list = document.getElementById('saveas-dirlist');
+        if (!list) return;
+        list.innerHTML = '';
+        var pathLabel = document.getElementById('saveas-path');
+        if (pathLabel) pathLabel.textContent = dirPath;
+        dialogPath = dirPath;
+
+        var items = vfs.ls(dirPath);
+        // directories first
+        items.sort(function (a, b) {
+          if (a.node.type !== b.node.type) return a.node.type === 'dir' ? -1 : 1;
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        });
+
+        items.forEach(function (item) {
+          var el = document.createElement('div');
+          el.className = 'saveas-diritem';
+          if (item.node.type === 'dir') {
+            el.innerHTML = '📁 ' + item.name;
+            el.addEventListener('dblclick', function () {
+              renderSaveAsDir(vfs.normalize(dirPath + '/' + item.name));
+            });
+          } else if (item.name.endsWith('.txt')) {
+            el.innerHTML = '📄 ' + item.name;
+            el.addEventListener('click', function () {
+              document.querySelectorAll('.saveas-diritem').forEach(function (i) { i.classList.remove('selected'); });
+              el.classList.add('selected');
+              nameInput.value = item.name;
+            });
+            el.addEventListener('dblclick', function () {
+              nameInput.value = item.name;
+              doSave(dirPath, nameInput);
+            });
+          } else {
+            return; // skip non-txt files
+          }
+          list.appendChild(el);
+        });
+
+        // focus name input
+        setTimeout(function () { nameInput.focus(); nameInput.select(); }, 50);
+      }
+
+      function doSave(dir, input) {
+        var name = input.value.trim();
+        if (!name) { setStatus('enter a filename'); return; }
+        if (!name.endsWith('.txt')) name += '.txt';
+        var path = vfs.normalize(dir + '/' + name);
+        var content = textarea.value;
+        var existing = vfs.read(path);
+        if (existing !== null) {
+          vfs.write(path, content);
+        } else {
+          vfs.touch(path, content);
+        }
+        dirty = false;
+        currentFile = path;
+        filenameInput.value = name;
+        setStatus('saved: ' + name);
+        notify('File Saved', name, 'success');
+        overlay.remove();
+      }
     }
 
     function loadFile(path) {
