@@ -2449,21 +2449,49 @@
           writeLine('guest');
           break;
 
-        case 'neofetch':
-          writeLine('       _______________');
-          writeLine('      /               \\');
-          writeLine('     |  PIXELOS v1.0   |');
-          writeLine('      \\_______________/');
-          writeLine('---------------------------');
-          writeLine('OS: PixelOS v1.0');
-          writeLine('Host: Hack Club Stardance');
-          writeLine('Kernel: JavaScript ES6');
-          writeLine('Uptime: ' + Math.floor((Date.now() - performance.now()) / 1000) + 's');
-          writeLine('Shell: pixel-sh v1.0');
-          writeLine('Resolution: ' + window.innerWidth + 'x' + window.innerHeight);
-          writeLine('Theme: ' + (document.body.getAttribute('data-theme') || 'day'));
-          writeLine('---------------------------');
+        case 'neofetch': {
+          var logo = [
+            '  ┌─────────────────────────────┐',
+            '  │  █████╗ ██╗██╗  ██╗███████╗██╗     ██████╗ ███████╗  │',
+            '  │  ██╔══██╗██║╚██╗██╔╝██╔════╝██║    ██╔═══██╗██╔════╝  │',
+            '  │  ██████╔╝██║ ╚███╔╝ █████╗  ██║    ██║   ██║███████╗  │',
+            '  │  ██╔═══╝ ██║ ██╔██╗ ██╔══╝  ██║    ██║   ██║╚════██║  │',
+            '  │  ██║     ██║██╔╝ ██╗███████╗███████╗╚██████╔╝███████║  │',
+            '  │  ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝  │',
+            '  └─────────────────────────────┘',
+          ];
+          var html = '<div class="neofetch-wrap">';
+          logo.forEach(function (line) {
+            html += '<div class="term-line" style="color:#00ff41;font-size:10px;line-height:1.3;letter-spacing:1px;">' + line + '</div>';
+          });
+          html += '<div class="neofetch-scan"></div></div>';
+          html += '<div class="term-line" style="color:rgba(0,255,65,0.3);font-size:8px;line-height:1.5;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+
+          var bootTime = Math.floor((Date.now() - performance.now()) / 1000);
+          var info = [
+            ['OS', 'PixelOS v1.0'],
+            ['Host', 'Hack Club Stardance'],
+            ['Kernel', 'JavaScript ES6'],
+            ['Uptime', bootTime + 's'],
+            ['Shell', 'pixel-sh v1.0'],
+            ['Resolution', window.innerWidth + 'x' + window.innerHeight],
+            ['Theme', document.body.getAttribute('data-theme') || 'day'],
+            ['Terminal', 'pixel-term v1.0'],
+          ];
+          info.forEach(function (pair) {
+            html += '<div class="term-line" style="font-size:11px;line-height:1.6;color:rgba(0,255,65,0.5);">' +
+              '<span style="color:rgba(0,255,65,0.35);width:100px;display:inline-block;">' + pair[0] + '</span>' +
+              '<span style="color:#fff;">' + pair[1] + '</span></div>';
+          });
+          html += '<div class="term-line" style="color:rgba(0,255,65,0.3);font-size:8px;line-height:1.5;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+
+          var line = document.createElement('div');
+          line.className = 'term-line';
+          line.innerHTML = html;
+          output.appendChild(line);
+          output.scrollTop = output.scrollHeight;
           break;
+        }
 
         case '':
           break;

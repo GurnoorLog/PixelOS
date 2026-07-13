@@ -2423,3 +2423,50 @@ input, textarea {
   line-height: 1;
   padding: 0;
 }
+
+/* ============================================================
+   NEOFETCH ANIMATION
+   ============================================================ */
+.neofetch-wrap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.neofetch-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(0,255,65,0.6), transparent);
+  box-shadow: 0 0 12px rgba(0,255,65,0.5), 0 0 24px rgba(0,255,65,0.2);
+  pointer-events: none;
+  animation: neofetchScan 3s ease-in-out infinite;
+  z-index: 1;
+}
+@keyframes neofetchScan {
+  0% { top: 0; opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.neofetch-pulse {
+  animation: neofetchPulse 2s ease-in-out infinite;
+}
+@keyframes neofetchPulse {
+  0%, 100% { text-shadow: 0 0 4px rgba(0,255,65,0.6); }
+  50% { text-shadow: 0 0 12px rgba(0,255,65,0.9), 0 0 24px rgba(0,255,65,0.4); }
+}
+.neofetch-title {
+  color: #00ff41;
+  font-weight: bold;
+}
+.neofetch-label {
+  color: rgba(0,255,65,0.5);
+}
+.neofetch-value {
+  color: #fff;
+}
+.neofetch-sep {
+  color: rgba(0,255,65,0.2);
+}
