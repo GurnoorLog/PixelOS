@@ -2199,6 +2199,7 @@
           best = score;
           localStorage.setItem('pixelos-snake-best', String(best));
           document.getElementById('snake-best').textContent = best;
+          notify('New High Score!', 'Snake — ' + best + ' points', 'success');
         }
         spawnFood();
         // Speed up
@@ -2632,15 +2633,21 @@
         var content = textarea.value;
         var existing = vfs.read(path);
         if (existing !== null) {
+          notify('Overwrite?', '"' + name + '" already exists. Overwrite?', 'warning');
+          if (!confirm('File "' + name + '" already exists. Overwrite it?')) {
+            setStatus('save cancelled — file exists');
+            return;
+          }
           vfs.write(path, content);
+          notify('File Saved', name, 'success');
         } else {
           vfs.touch(path, content);
+          notify('File Saved', name, 'success');
         }
         dirty = false;
         currentFile = path;
         filenameInput.value = name;
         setStatus('saved: ' + name);
-        notify('File Saved', name, 'success');
         overlay.remove();
       }
     }
