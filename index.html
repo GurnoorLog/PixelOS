@@ -39,6 +39,19 @@
   </div>
   <span id="status-text" class="glitch" data-text="// PixelOS — pixel meets glass">// PixelOS — pixel meets glass</span>
   <div class="top-right">
+    <div id="notif-bell-wrap">
+      <button id="notif-bell" aria-label="Notifications" title="Notifications">🔔</button>
+      <span id="notif-badge" class="hidden">0</span>
+    </div>
+    <div id="notif-dropdown" class="glass-panel closed">
+      <div class="notif-dropdown-header">
+        <span class="notif-dropdown-title">NOTIFICATIONS</span>
+        <button class="notif-dropdown-clear" id="notif-clear-all">CLEAR</button>
+      </div>
+      <div class="notif-dropdown-list" id="notif-dropdown-list">
+        <div class="notif-dropdown-empty">no notifications</div>
+      </div>
+    </div>
     <button id="theme-toggle" aria-label="Toggle Day/Night" title="Toggle Day/Night">☀️</button>
     <span id="clock">00:00:00</span>
   </div>

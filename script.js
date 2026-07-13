@@ -1739,19 +1739,27 @@
   /* -------------------------------------------------------
      NOTIFICATION SYSTEM
   ------------------------------------------------------- */
-  var notifications = [];
+  var notifHistory = [];
+  var notifUnread = 0;
 
   function notify(title, message, type) {
     type = type || 'info';
     var container = document.getElementById('notification-container');
     if (!container) return;
+
+    // Add to history
+    notifHistory.push({ title: title, message: message, type: type, time: Date.now(), read: false });
+    notifUnread++;
+    updateNotifBadge();
+    updateNotifDropdown();
+
+    // Toast
     var toast = document.createElement('div');
     toast.className = 'notification-toast ' + type;
     toast.innerHTML = '<span class="notif-title">' + title + '</span>' +
       '<span class="notif-msg">' + message + '</span>' +
       '<button class="notif-close">&times;</button>';
     container.appendChild(toast);
-    notifications.push(toast);
 
     toast.querySelector('.notif-close').addEventListener('click', function () {
       dismiss(toast);
@@ -1765,6 +1773,46 @@
       el.style.transform = 'translateX(100%)';
       setTimeout(function () { if (el.parentNode) el.remove(); }, 300);
     }
+  }
+
+  function updateNotifBadge() {
+    var badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    if (notifUnread > 0) {
+      badge.textContent = notifUnread > 99 ? '99+' : notifUnread;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  function markNotifsRead() {
+    notifUnread = 0;
+    updateNotifBadge();
+    for (var i = 0; i < notifHistory.length; i++) {
+      notifHistory[i].read = true;
+    }
+    updateNotifDropdown();
+  }
+
+  function updateNotifDropdown() {
+    var list = document.getElementById('notif-dropdown-list');
+    if (!list) return;
+    if (notifHistory.length === 0) {
+      list.innerHTML = '<div class="notif-dropdown-empty">no notifications</div>';
+      return;
+    }
+    var html = '';
+    for (var i = notifHistory.length - 1; i >= 0; i--) {
+      var n = notifHistory[i];
+      var ago = Math.floor((Date.now() - n.time) / 1000);
+      var timeStr = ago < 60 ? ago + 's ago' : ago < 3600 ? Math.floor(ago / 60) + 'm ago' : Math.floor(ago / 3600) + 'h ago';
+      html += '<div class="notif-dropdown-item ' + n.type + (n.read ? '' : ' unread') + '" data-idx="' + i + '">' +
+        '<span class="notif-dd-title">' + n.title + '</span>' +
+        '<span class="notif-dd-msg">' + n.message + '</span>' +
+        '<span class="notif-dd-time">' + timeStr + '</span></div>';
+    }
+    list.innerHTML = html;
   }
 
   /* -------------------------------------------------------
@@ -2557,6 +2605,32 @@
     initClockWidget();
     initCalendarWidget();
     initSettings();
+
+    // Notification bell
+    var bellBtn = document.getElementById('notif-bell');
+    var notifDropdown = document.getElementById('notif-dropdown');
+    if (bellBtn && notifDropdown) {
+      bellBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('closed');
+        if (!notifDropdown.classList.contains('closed')) {
+          markNotifsRead();
+        }
+      });
+      document.addEventListener('click', function (e) {
+        var wrap = document.getElementById('notif-bell-wrap');
+        if (!notifDropdown.classList.contains('closed') && wrap && !wrap.contains(e.target)) {
+          notifDropdown.classList.add('closed');
+        }
+      });
+    }
+    document.getElementById('notif-clear-all').addEventListener('click', function () {
+      notifHistory = [];
+      notifUnread = 0;
+      updateNotifBadge();
+      updateNotifDropdown();
+    });
+
     initExplorer();
     initStickyNotes();
     initSnake();
