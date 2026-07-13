@@ -140,7 +140,7 @@
     var h = String(now.getHours()).padStart(2, '0');
     var m = String(now.getMinutes()).padStart(2, '0');
     var s = String(now.getSeconds()).padStart(2, '0');
-    document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+    document.getElementById('clock').innerHTML = h + '<span class="clock-sep">:</span>' + m + '<span class="clock-sep">:</span>' + s;
   }
 
   /* -------------------------------------------------------
@@ -151,7 +151,12 @@
     var btn = document.getElementById('theme-toggle');
     var isNight = body.getAttribute('data-theme') === 'night';
     body.setAttribute('data-theme', isNight ? 'day' : 'night');
-    btn.textContent = isNight ? '☀️' : '🌙';
+    var sun = btn.querySelector('.theme-sun');
+    var moon = btn.querySelector('.theme-moon');
+    if (sun && moon) {
+      sun.style.display = isNight ? '' : 'none';
+      moon.style.display = isNight ? 'none' : '';
+    }
   }
 
   /* -------------------------------------------------------
@@ -327,6 +332,7 @@
         closeBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           win.style.display = 'none';
+          updateTaskbar();
         });
       }
       if (minBtn) {
@@ -334,6 +340,7 @@
           e.stopPropagation();
           win.classList.toggle('minimized');
           minBtn.textContent = win.classList.contains('minimized') ? '▢' : '─';
+          updateTaskbar();
         });
       }
     });
@@ -418,11 +425,52 @@
     var minBtn = win.querySelector('.win-min');
     if (minBtn) minBtn.textContent = '─';
     bringToFront(win);
+    updateTaskbar();
     // Auto-focus calculator input
     if (app === 'calc') {
       var ci = document.getElementById('calc-input');
       if (ci) setTimeout(function () { ci.focus(); }, 100);
     }
+  }
+
+  function updateTaskbar() {
+    var container = document.getElementById('taskbar-apps');
+    if (!container) return;
+    container.innerHTML = '';
+    document.querySelectorAll('.window').forEach(function (win) {
+      if (win.style.display === 'none') return;
+      var app = win.getAttribute('data-app');
+      var spriteCanvas = win.querySelector('.win-icon');
+      var title = win.querySelector('.window-title');
+      var label = title ? title.textContent.trim().replace(/^[^\w]*/, '') : app;
+      var el = document.createElement('div');
+      el.className = 'taskbar-app';
+      if (!win.classList.contains('minimized')) el.classList.add('active');
+      if (spriteCanvas) {
+        var clone = spriteCanvas.cloneNode(true);
+        clone.width = 16;
+        clone.height = 16;
+        clone.style.width = '16px';
+        clone.style.height = '16px';
+        el.appendChild(clone);
+      } else {
+        el.textContent = label.charAt(0).toUpperCase();
+      }
+      el.title = label;
+      el.addEventListener('click', function () {
+        if (win.style.display === 'none') {
+          win.style.display = 'flex';
+        }
+        if (win.classList.contains('minimized')) {
+          win.classList.remove('minimized');
+          var mb = win.querySelector('.win-min');
+          if (mb) mb.textContent = '─';
+        }
+        bringToFront(win);
+        updateTaskbar();
+      });
+      container.appendChild(el);
+    });
   }
 
   /* -------------------------------------------------------
@@ -3296,6 +3344,7 @@
     document.querySelectorAll('.window').forEach(function (win) {
       win.style.display = 'none';
     });
+    updateTaskbar();
   });
 
 })();

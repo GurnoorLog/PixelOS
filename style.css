@@ -206,81 +206,144 @@ body[data-theme="night"] #rain-canvas {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 1000;
-  height: 44px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  background: var(--bar-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--bar-bg) 85%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 24px rgba(0,0,0,0.15);
+  gap: 8px;
 }
 
-.top-left { display: flex; align-items: center; gap: 8px; }
-.top-right { display: flex; align-items: center; gap: 12px; }
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 
 #start-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-pixel);
-  font-size: 9px;
-  padding: 6px 12px;
+  font-size: 8px;
+  padding: 5px 10px;
   background: var(--btn-bg);
   color: var(--text-primary);
   border: 1px solid var(--glass-border);
   cursor: pointer;
   letter-spacing: 1px;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   backdrop-filter: blur(8px);
+  border-radius: 4px;
+  text-transform: uppercase;
 }
 #start-btn:hover, #start-btn.active {
   background: var(--btn-hover);
   border-color: var(--accent);
-  box-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
+  box-shadow: 0 0 16px rgba(192,132,252,0.25);
+}
+.start-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #c084fc, #ff6b9d);
+  flex-shrink: 0;
+}
+.start-label {
+  line-height: 1;
 }
 
-#status-text {
-  font-family: var(--font-pixel);
-  font-size: 8px;
-  color: var(--text-secondary);
-  letter-spacing: 2px;
-  text-transform: uppercase;
+#taskbar-apps {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 1px solid var(--glass-border);
+  min-width: 40px;
+  height: 26px;
 }
-#status-text.glitch {
+.taskbar-app {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--btn-bg);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
   position: relative;
 }
-#status-text.glitch::before,
-#status-text.glitch::after {
-  content: attr(data-text);
+.taskbar-app:hover {
+  background: var(--btn-hover);
+  border-color: var(--glass-border);
+}
+.taskbar-app.active {
+  border-color: var(--accent);
+}
+.taskbar-app.active::after {
+  content: '';
   position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
 }
 
 #theme-toggle {
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: var(--btn-bg);
   border: 1px solid var(--glass-border);
   border-radius: 4px;
-  padding: 4px 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  line-height: 1;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 #theme-toggle:hover {
   background: var(--btn-hover);
-  transform: scale(1.1);
+  color: var(--text-primary);
+  transform: scale(1.08);
 }
 
 #clock {
   font-family: var(--font-pixel);
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-primary);
-  min-width: 70px;
+  min-width: 62px;
   text-align: right;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  padding: 0 4px;
+  user-select: none;
+  line-height: 1;
 }
+#clock .clock-sep {
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
 
 /* --- START MENU --- */
 .glass-panel {
@@ -1974,13 +2037,20 @@ body[data-theme="night"] .window {
    RESPONSIVE TOUCHES
    ============================================================ */
 @media (max-width: 768px) {
-  #status-text { display: none; }
+  #taskbar-apps { display: none; }
   .window { min-width: 240px !important; min-height: 180px !important; }
   #dock { gap: 4px; padding: 6px 10px; }
   .dock-sprite { width: 22px; height: 22px; }
   .dock-label { display: none; }
-  #top-bar { padding: 0 8px; }
-  #start-btn { font-size: 7px; padding: 4px 8px; }
+  #top-bar { padding: 0 6px; gap: 4px; }
+  #start-btn { font-size: 7px; padding: 4px 7px; }
+  .start-dot { width: 6px; height: 6px; }
+  .start-label { display: none; }
+  #clock { font-size: 8px; min-width: 50px; }
+  #theme-toggle { width: 24px; height: 24px; }
+  #theme-toggle svg { width: 12px; height: 12px; }
+  #notif-bell { width: 24px; height: 24px; }
+  #notif-bell svg { width: 12px; height: 12px; }
 }
 
 /* ============================================================
@@ -2593,19 +2663,32 @@ input, textarea, .saveas-nameinput {
   align-items: center;
 }
 #notif-bell {
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: var(--btn-bg);
   border: 1px solid var(--glass-border);
   border-radius: 4px;
-  padding: 4px 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  line-height: 1;
-  position: relative;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
 }
 #notif-bell:hover {
   background: var(--btn-hover);
-  transform: scale(1.1);
+  color: var(--text-primary);
+  transform: scale(1.08);
+}
+#notif-bell.has-unread {
+  color: var(--accent2);
+  animation: bell-wobble 0.4s ease;
+}
+@keyframes bell-wobble {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(8deg); }
+  50% { transform: rotate(-8deg); }
+  75% { transform: rotate(4deg); }
 }
 #notif-badge {
   position: absolute;
@@ -2636,7 +2719,7 @@ input, textarea, .saveas-nameinput {
 
 #notif-dropdown {
   position: absolute;
-  top: 44px;
+  top: 42px;
   right: 80px;
   z-index: 99999;
   width: 300px;
