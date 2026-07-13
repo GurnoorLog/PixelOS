@@ -1475,7 +1475,9 @@
     var t = e.target;
     if (t.closest('.window-header') || t.closest('.window-resize-handle') ||
         t.closest('button') || t.closest('input') || t.closest('textarea') ||
-        t.closest('select') || t.closest('iframe') || t.closest('.dock-icon')) return;
+        t.closest('select') || t.closest('iframe') || t.closest('.dock-icon') ||
+        t.closest('.sticky-note') || t.closest('.explorer-item') ||
+        t.closest('.explorer-sidebar-item') || t.closest('.terminal-input')) return;
     createSparkles(e.clientX, e.clientY);
   });
 
@@ -1511,6 +1513,999 @@
   }
 
   /* -------------------------------------------------------
+     SPRITE DEFINITIONS — New Apps
+  ------------------------------------------------------- */
+  SPRITES.folder = {
+    palette: ['#fbbf24', '#f59e0b', '#d97706'],
+    rows: [
+      '000111111100',
+      '001111111110',
+      '011111111111',
+      '011000000110',
+      '011000000110',
+      '011000000110',
+      '011000000110',
+      '011000000110',
+      '011000000110',
+      '011111111110',
+      '001111111100',
+    ],
+  };
+  SPRITES.snake = {
+    palette: ['#34d399', '#10b981', '#059669'],
+    rows: [
+      '000001100000',
+      '000111111000',
+      '001222222100',
+      '012222222210',
+      '012201222210',
+      '001220122100',
+      '000122221000',
+      '000012210000',
+      '000012210000',
+      '000001100000',
+      '000001100000',
+    ],
+  };
+  SPRITES.timer = {
+    palette: ['#60a5fa', '#3b82f6', '#2563eb'],
+    rows: [
+      '000111111000',
+      '011111111110',
+      '011000000110',
+      '011022220110',
+      '011022220110',
+      '011022220110',
+      '011022220110',
+      '011022220110',
+      '011022220110',
+      '011000000110',
+      '011111111110',
+      '001111111100',
+    ],
+  };
+  SPRITES.terminal = {
+    palette: ['#34d399', '#10b981', '#047857'],
+    rows: [
+      '000000000000',
+      '000111111000',
+      '001111111100',
+      '011011101110',
+      '011101110110',
+      '011110111110',
+      '011101110110',
+      '011011101110',
+      '001110111100',
+      '000111111000',
+      '000000000000',
+    ],
+  };
+
+  /* -------------------------------------------------------
+     VIRTUAL FILESYSTEM (localStorage-backed)
+  ------------------------------------------------------- */
+  var vfs = (function () {
+    var STORAGE_KEY = 'pixelos-vfs';
+    var root = { type: 'dir', children: {} };
+    var currentPath = '/';
+
+    function init() {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { root = JSON.parse(saved); } catch (e) { seedFS(); }
+      } else {
+        seedFS();
+      }
+    }
+
+    function seedFS() {
+      root = { type: 'dir', children: {} };
+      mkdirp('/Documents');
+      mkdirp('/Pictures');
+      mkdirp('/Music');
+      mkdirp('/Notes');
+      touch('/Documents/hello.txt', 'Welcome to PixelOS!\n');
+      touch('/Notes/welcome.note', 'Your sticky notes appear here.\n');
+      save();
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+    }
+
+    function resolve(p) {
+      if (!p || p === '/') return { node: root, name: '/', parent: null };
+      var parts = normalize(p).split('/').filter(Boolean);
+      var node = root;
+      for (var i = 0; i < parts.length; i++) {
+        if (!node.children || !node.children[parts[i]]) return null;
+        node = node.children[parts[i]];
+      }
+      return { node: node, name: parts[parts.length - 1], parent: null };
+    }
+
+    function normalize(p) {
+      if (!p || p[0] !== '/') p = currentPath + '/' + p;
+      var parts = [];
+      p.split('/').forEach(function (seg) {
+        if (seg === '..') parts.pop();
+        else if (seg && seg !== '.') parts.push(seg);
+      });
+      return '/' + parts.join('/');
+    }
+
+    function mkdirp(path) {
+      var parts = normalize(path).split('/').filter(Boolean);
+      var node = root;
+      for (var i = 0; i < parts.length; i++) {
+        if (!node.children[parts[i]]) {
+          node.children[parts[i]] = { type: 'dir', children: {} };
+        }
+        node = node.children[parts[i]];
+      }
+    }
+
+    function ls(path) {
+      var r = resolve(path || currentPath);
+      if (!r || r.node.type !== 'dir') return [];
+      var items = [];
+      for (var name in r.node.children) {
+        items.push({ name: name, node: r.node.children[name] });
+      }
+      items.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      return items;
+    }
+
+    function mkdir(path) {
+      var normalized = normalize(path);
+      var parts = normalized.split('/').filter(Boolean);
+      var name = parts.pop();
+      var parentPath = '/' + parts.join('/');
+      var r = resolve(parentPath);
+      if (!r || r.node.type !== 'dir') return false;
+      if (r.node.children[name]) return false;
+      r.node.children[name] = { type: 'dir', children: {} };
+      save();
+      return true;
+    }
+
+    function touch(path, content) {
+      var normalized = normalize(path);
+      var parts = normalized.split('/').filter(Boolean);
+      var name = parts.pop();
+      var parentPath = '/' + parts.join('/');
+      var r = resolve(parentPath);
+      if (!r || r.node.type !== 'dir') return false;
+      r.node.children[name] = { type: 'file', content: content || '' };
+      save();
+      return true;
+    }
+
+    function rm(path) {
+      var normalized = normalize(path);
+      var parts = normalized.split('/').filter(Boolean);
+      var name = parts.pop();
+      var parentPath = '/' + parts.join('/');
+      var r = resolve(parentPath);
+      if (!r || r.node.type !== 'dir') return false;
+      delete r.node.children[name];
+      save();
+      return true;
+    }
+
+    function rename(oldPath, newName) {
+      var norm = normalize(oldPath);
+      var parts = norm.split('/').filter(Boolean);
+      parts[parts.length - 1] = newName;
+      var targetPath = '/' + parts.join('/');
+      var r = resolve(oldPath);
+      var t = resolve(targetPath);
+      if (!r || t) return false;
+      var parentParts = norm.split('/').filter(Boolean);
+      parentParts.pop();
+      var parentPath = '/' + parentParts.join('/');
+      var p = resolve(parentPath);
+      if (!p) return false;
+      var oldName = norm.split('/').filter(Boolean).pop();
+      p.node.children[newName] = r.node;
+      delete p.node.children[oldName];
+      save();
+      return true;
+    }
+
+    function read(path) {
+      var r = resolve(path);
+      if (!r || r.node.type !== 'file') return null;
+      return r.node.content || '';
+    }
+
+    function write(path, content) {
+      var r = resolve(path);
+      if (!r || r.node.type !== 'file') return false;
+      r.node.content = content;
+      save();
+      return true;
+    }
+
+    function getPath() { return currentPath; }
+    function setPath(p) { currentPath = normalize(p); }
+
+    init();
+    return { ls: ls, mkdir: mkdir, touch: touch, rm: rm, rename: rename,
+             read: read, write: write, resolve: resolve, normalize: normalize,
+             getPath: getPath, setPath: setPath, save: save };
+  })();
+
+  /* -------------------------------------------------------
+     NOTIFICATION SYSTEM
+  ------------------------------------------------------- */
+  var notifications = [];
+
+  function notify(title, message, type) {
+    type = type || 'info';
+    var container = document.getElementById('notification-container');
+    if (!container) return;
+    var toast = document.createElement('div');
+    toast.className = 'notification-toast ' + type;
+    toast.innerHTML = '<span class="notif-title">' + title + '</span>' +
+      '<span class="notif-msg">' + message + '</span>' +
+      '<button class="notif-close">&times;</button>';
+    container.appendChild(toast);
+    notifications.push(toast);
+
+    toast.querySelector('.notif-close').addEventListener('click', function () {
+      dismiss(toast);
+    });
+
+    setTimeout(function () { dismiss(toast); }, 4000);
+
+    function dismiss(el) {
+      if (!el.parentNode) return;
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(100%)';
+      setTimeout(function () { if (el.parentNode) el.remove(); }, 300);
+    }
+  }
+
+  /* -------------------------------------------------------
+     APP: FILE EXPLORER
+  ------------------------------------------------------- */
+  function initExplorer() {
+    var filesEl = document.getElementById('explorer-files');
+    var pathEl = document.getElementById('explorer-path');
+    if (!filesEl) return;
+    var currentPath = '/';
+
+    function renderDir(path) {
+      currentPath = path;
+      if (pathEl) pathEl.textContent = path;
+      var items = vfs.ls(path);
+      filesEl.innerHTML = '';
+      items.forEach(function (item) {
+        var el = document.createElement('div');
+        el.className = 'explorer-item';
+        el.setAttribute('data-name', item.name);
+        el.setAttribute('data-type', item.node.type);
+        var icon = item.node.type === 'dir' ? '📁' : '📄';
+        el.innerHTML =
+          '<span class="explorer-item-icon">' + icon + '</span>' +
+          '<span class="explorer-item-name">' + item.name + '</span>';
+        el.addEventListener('dblclick', function () {
+          if (item.node.type === 'dir') {
+            renderDir(vfs.normalize(path + '/' + item.name));
+          }
+        });
+        el.addEventListener('click', function (e) {
+          document.querySelectorAll('.explorer-item').forEach(function (i) { i.classList.remove('selected'); });
+          el.classList.add('selected');
+        });
+        el.addEventListener('contextmenu', function (e) {
+          e.preventDefault();
+          showContextMenu(e.clientX, e.clientY, item.name, item.node.type, path);
+        });
+        filesEl.appendChild(el);
+      });
+
+      // Update sidebar active
+      document.querySelectorAll('.explorer-sidebar-item').forEach(function (item) {
+        item.classList.toggle('active', item.getAttribute('data-path') === path);
+      });
+    }
+
+    function showContextMenu(x, y, name, type, parentPath) {
+      removeContextMenu();
+      var menu = document.createElement('div');
+      menu.className = 'explorer-context-menu';
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+
+      if (type === 'file') {
+        var readItem = document.createElement('div');
+        readItem.className = 'explorer-context-item';
+        readItem.textContent = '📖 Read';
+        readItem.addEventListener('click', function () {
+          var content = vfs.read(parentPath + '/' + name);
+          if (content !== null) {
+            var newContent = prompt('Edit file content:', content);
+            if (newContent !== null) {
+              vfs.write(parentPath + '/' + name, newContent);
+              notify('File Saved', name, 'success');
+            }
+          }
+          removeContextMenu();
+        });
+        menu.appendChild(readItem);
+      }
+
+      var renameItem = document.createElement('div');
+      renameItem.className = 'explorer-context-item';
+      renameItem.textContent = '✏️ Rename';
+      renameItem.addEventListener('click', function () {
+        var newName = prompt('Rename "' + name + '" to:', name);
+        if (newName && newName !== name) {
+          vfs.rename(parentPath + '/' + name, newName);
+          notify('Renamed', name + ' → ' + newName, 'info');
+          renderDir(currentPath);
+        }
+        removeContextMenu();
+      });
+      menu.appendChild(renameItem);
+
+      var delItem = document.createElement('div');
+      delItem.className = 'explorer-context-item';
+      delItem.textContent = '🗑️ Delete';
+      delItem.addEventListener('click', function () {
+        if (confirm('Delete "' + name + '"?')) {
+          vfs.rm(parentPath + '/' + name);
+          notify('Deleted', name, 'warning');
+          renderDir(currentPath);
+        }
+        removeContextMenu();
+      });
+      menu.appendChild(delItem);
+
+      document.body.appendChild(menu);
+      setTimeout(function () {
+        document.addEventListener('click', removeContextMenu, { once: true });
+      }, 0);
+    }
+
+    function removeContextMenu() {
+      var m = document.querySelector('.explorer-context-menu');
+      if (m) m.remove();
+    }
+
+    // Sidebar navigation
+    document.querySelectorAll('.explorer-sidebar-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        renderDir(this.getAttribute('data-path'));
+      });
+    });
+
+    // New folder button
+    document.getElementById('explorer-new-folder').addEventListener('click', function () {
+      var name = prompt('Folder name:');
+      if (name) {
+        vfs.mkdir(currentPath + '/' + name);
+        notify('Folder Created', name, 'success');
+        renderDir(currentPath);
+      }
+    });
+
+    renderDir('/');
+  }
+
+  /* -------------------------------------------------------
+     APP: STICKY NOTES
+  ------------------------------------------------------- */
+  function initStickyNotes() {
+    var STORAGE_KEY = 'pixelos-notes';
+    var container = document.getElementById('sticky-notes-container');
+    if (!container) return;
+
+    var colors = ['yellow', 'pink', 'green', 'blue', 'purple'];
+    var colorHex = { yellow: '#fef3c7', pink: '#fce7f3', green: '#d1fae5', blue: '#dbeafe', purple: '#ede9fe' };
+
+    function loadNotes() {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          var notes = JSON.parse(saved);
+          notes.forEach(function (n) { createNote(n.text, n.color, n.x, n.y, false); });
+        } catch (e) {}
+      }
+    }
+
+    function saveNotes() {
+      var notes = [];
+      document.querySelectorAll('.sticky-note').forEach(function (el) {
+        notes.push({
+          text: el.querySelector('.sticky-note-text').value,
+          color: el.classList.contains('yellow') ? 'yellow' :
+                 el.classList.contains('pink') ? 'pink' :
+                 el.classList.contains('green') ? 'green' :
+                 el.classList.contains('blue') ? 'blue' : 'purple',
+          x: parseInt(el.style.left),
+          y: parseInt(el.style.top),
+        });
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    }
+
+    function createNote(text, color, x, y, shouldSave) {
+      if (!container) return;
+      if (x === undefined) x = 40 + Math.random() * 200;
+      if (y === undefined) y = 40 + Math.random() * 200;
+      color = color || 'yellow';
+      text = text || '';
+
+      var note = document.createElement('div');
+      note.className = 'sticky-note ' + color;
+      note.style.left = x + 'px';
+      note.style.top = y + 'px';
+      note.innerHTML =
+        '<div class="sticky-note-header">' +
+          '<div class="sticky-note-colorbar">' +
+            colors.map(function (c) { return '<span class="sticky-color-dot" style="background:' + colorHex[c] + '" data-color="' + c + '"></span>'; }).join('') +
+          '</div>' +
+          '<button class="sticky-note-close">&times;</button>' +
+        '</div>' +
+        '<textarea class="sticky-note-text">' + text + '</textarea>';
+      container.appendChild(note);
+
+      // Color switcher
+      note.querySelectorAll('.sticky-color-dot').forEach(function (dot) {
+        dot.addEventListener('click', function () {
+          var newColor = this.getAttribute('data-color');
+          colors.forEach(function (c) { note.classList.remove(c); });
+          note.classList.add(newColor);
+          saveNotes();
+        });
+      });
+
+      // Close button
+      note.querySelector('.sticky-note-close').addEventListener('click', function () {
+        note.remove();
+        saveNotes();
+      });
+
+      // Auto-save on text input
+      note.querySelector('.sticky-note-text').addEventListener('input', saveNotes);
+
+      // Drag
+      var header = note.querySelector('.sticky-note-header');
+      var isDragging = false, startX, startY, origX, origY;
+
+      header.addEventListener('mousedown', function (e) {
+        if (e.target.classList.contains('sticky-color-dot') || e.target.classList.contains('sticky-note-close')) return;
+        isDragging = true;
+        var rect = note.getBoundingClientRect();
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = rect.left;
+        origY = rect.top;
+        e.preventDefault();
+
+        function onMove(ev) {
+          if (!isDragging) return;
+          note.style.left = (origX + ev.clientX - startX) + 'px';
+          note.style.top = (origY + ev.clientY - startY) + 'px';
+        }
+
+        function onUp() {
+          isDragging = false;
+          saveNotes();
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      if (shouldSave !== false) saveNotes();
+      return note;
+    }
+
+    // New note button
+    var btn = document.createElement('button');
+    btn.id = 'new-note-btn';
+    btn.textContent = '+';
+    btn.title = 'New Sticky Note';
+    btn.addEventListener('click', function () { createNote('', 'yellow', undefined, undefined, true); });
+    document.body.appendChild(btn);
+
+    loadNotes();
+  }
+
+  /* -------------------------------------------------------
+     APP: PIXEL SNAKE
+  ------------------------------------------------------- */
+  function initSnake() {
+    var canvas = document.getElementById('snake-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    var GRID = 15;
+    var CELL = canvas.width / GRID;
+    var snake = [];
+    var food = {};
+    var direction = 'right';
+    var nextDirection = 'right';
+    var score = 0;
+    var best = parseInt(localStorage.getItem('pixelos-snake-best') || '0');
+    var gameOver = false;
+    var gameLoop = null;
+    var speed = 150;
+
+    document.getElementById('snake-best').textContent = best;
+
+    function init() {
+      snake = [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }];
+      direction = 'right';
+      nextDirection = 'right';
+      score = 0;
+      gameOver = false;
+      speed = 150;
+      document.getElementById('snake-score').textContent = '0';
+      spawnFood();
+      draw();
+      if (gameLoop) clearInterval(gameLoop);
+      gameLoop = setInterval(update, speed);
+    }
+
+    function spawnFood() {
+      var free = [];
+      for (var x = 0; x < GRID; x++) {
+        for (var y = 0; y < GRID; y++) {
+          var occupied = false;
+          for (var i = 0; i < snake.length; i++) {
+            if (snake[i].x === x && snake[i].y === y) { occupied = true; break; }
+          }
+          if (!occupied) free.push({ x: x, y: y });
+        }
+      }
+      if (free.length > 0) {
+        food = free[Math.floor(Math.random() * free.length)];
+      }
+    }
+
+    function update() {
+      if (gameOver) return;
+      direction = nextDirection;
+      var head = { x: snake[0].x, y: snake[0].y };
+      switch (direction) {
+        case 'up': head.y--; break;
+        case 'down': head.y++; break;
+        case 'left': head.x--; break;
+        case 'right': head.x++; break;
+      }
+
+      // Wall wrap
+      if (head.x < 0) head.x = GRID - 1;
+      if (head.x >= GRID) head.x = 0;
+      if (head.y < 0) head.y = GRID - 1;
+      if (head.y >= GRID) head.y = 0;
+
+      // Self collision (check from index 1 to skip the tail that might move)
+      for (var i = 1; i < snake.length; i++) {
+        if (snake[i].x === head.x && snake[i].y === head.y) {
+          endGame();
+          return;
+        }
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        document.getElementById('snake-score').textContent = score;
+        if (score > best) {
+          best = score;
+          localStorage.setItem('pixelos-snake-best', String(best));
+          document.getElementById('snake-best').textContent = best;
+        }
+        spawnFood();
+        // Speed up
+        if (speed > 60) {
+          speed -= 3;
+          clearInterval(gameLoop);
+          gameLoop = setInterval(update, speed);
+        }
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function endGame() {
+      gameOver = true;
+      clearInterval(gameLoop);
+      notify('Snake Game Over', 'Score: ' + score + ' | Best: ' + best, 'warning');
+      draw();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 0.5;
+      for (var i = 0; i <= GRID; i++) {
+        ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(canvas.width, i * CELL); ctx.stroke();
+      }
+      // Snake
+      for (var i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? '#34d399' : '#10b981';
+        var padding = i === 0 ? 1 : 2;
+        ctx.fillRect(snake[i].x * CELL + padding, snake[i].y * CELL + padding, CELL - padding * 2, CELL - padding * 2);
+        if (i === 0) {
+          // Eyes
+          ctx.fillStyle = '#000';
+          var ex = snake[i].x * CELL + (direction === 'right' ? CELL - 7 : direction === 'left' ? 3 : CELL / 2 - 2);
+          var ey = snake[i].y * CELL + (direction === 'up' ? 3 : direction === 'down' ? CELL - 7 : CELL / 2 - 2);
+          ctx.fillRect(ex, ey, 3, 3);
+        }
+      }
+      // Food
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(food.x * CELL + CELL/2 - 2, food.y * CELL + 2, 4, 3);
+
+      // Game over overlay
+      if (gameOver) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = '16px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 10);
+        ctx.fillStyle = '#aaa';
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillText('press RESTART', canvas.width/2, canvas.height/2 + 16);
+      }
+    }
+
+    // Controls
+    document.addEventListener('keydown', function (e) {
+      var key = e.key;
+      if (['ArrowUp', 'w', 'W'].includes(key) && direction !== 'down') nextDirection = 'up';
+      if (['ArrowDown', 's', 'S'].includes(key) && direction !== 'up') nextDirection = 'down';
+      if (['ArrowLeft', 'a', 'A'].includes(key) && direction !== 'right') nextDirection = 'left';
+      if (['ArrowRight', 'd', 'D'].includes(key) && direction !== 'left') nextDirection = 'right';
+    });
+
+    document.getElementById('snake-restart').addEventListener('click', function () {
+      if (gameLoop) clearInterval(gameLoop);
+      init();
+    });
+
+    init();
+  }
+
+  /* -------------------------------------------------------
+     APP: TIMER / STOPWATCH
+  ------------------------------------------------------- */
+  function initTimer() {
+    var display = document.getElementById('timer-display');
+    var startBtn = document.getElementById('timer-start');
+    var lapBtn = document.getElementById('timer-lap');
+    var resetBtn = document.getElementById('timer-reset');
+    var lapsEl = document.getElementById('timer-laps');
+    var presets = document.querySelectorAll('.timer-preset-btn');
+    var customMin = document.getElementById('timer-custom-min');
+    if (!display || !startBtn) return;
+
+    var mode = 'stopwatch';
+    var running = false;
+    var startTime = 0;
+    var elapsed = 0;
+    var lapCount = 0;
+    var timerInterval = null;
+    var countdownTarget = 0;
+
+    function formatTime(ms) {
+      var totalSec = Math.floor(ms / 1000);
+      var min = Math.floor(totalSec / 60);
+      var sec = totalSec % 60;
+      var tenth = Math.floor((ms % 1000) / 100);
+      return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + tenth;
+    }
+
+    function updateDisplay() {
+      if (running) {
+        var now = Date.now();
+        if (mode === 'stopwatch') {
+          elapsed = now - startTime;
+        } else {
+          elapsed = countdownTarget - (now - startTime);
+          if (elapsed <= 0) {
+            elapsed = 0;
+            running = false;
+            clearInterval(timerInterval);
+            startBtn.textContent = '▶ START';
+            notify('Timer Done', 'Countdown finished!', 'success');
+          }
+        }
+      }
+      display.textContent = formatTime(elapsed);
+    }
+
+    function startTimer() {
+      if (mode === 'stopwatch') {
+        startTime = Date.now() - elapsed;
+      } else {
+        if (elapsed <= 0) return;
+        startTime = Date.now() - (countdownTarget - elapsed);
+      }
+      running = true;
+      startBtn.textContent = '⏸ PAUSE';
+      lapBtn.disabled = (mode === 'stopwatch') ? false : true;
+      timerInterval = setInterval(updateDisplay, 100);
+    }
+
+    function pauseTimer() {
+      running = false;
+      clearInterval(timerInterval);
+      startBtn.textContent = '▶ RESUME';
+    }
+
+    function resetTimer() {
+      running = false;
+      clearInterval(timerInterval);
+      elapsed = 0;
+      countdownTarget = 0;
+      lapCount = 0;
+      startBtn.textContent = '▶ START';
+      display.textContent = '00:00.0';
+      if (lapsEl) lapsEl.innerHTML = '';
+      startBtn.disabled = false;
+    }
+
+    function setCountdown(minutes) {
+      if (running) pauseTimer();
+      mode = 'countdown';
+      countdownTarget = minutes * 60 * 1000;
+      elapsed = countdownTarget;
+      display.textContent = formatTime(elapsed);
+      document.querySelectorAll('.timer-mode-btn').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-mode') === 'countdown');
+      });
+    }
+
+    // Mode toggle
+    document.querySelectorAll('.timer-mode-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (running) pauseTimer();
+        mode = this.getAttribute('data-mode');
+        document.querySelectorAll('.timer-mode-btn').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        resetTimer();
+      });
+    });
+
+    startBtn.addEventListener('click', function () {
+      if (running) {
+        pauseTimer();
+      } else {
+        if (mode === 'countdown' && elapsed <= 0) return;
+        startTimer();
+      }
+    });
+
+    lapBtn.addEventListener('click', function () {
+      if (mode !== 'stopwatch' || !running) return;
+      lapCount++;
+      var li = document.createElement('div');
+      li.className = 'timer-lap-item';
+      li.innerHTML = '<span>Lap ' + lapCount + '</span><span>' + formatTime(elapsed) + '</span>';
+      if (lapsEl) lapsEl.appendChild(li);
+    });
+
+    resetBtn.addEventListener('click', resetTimer);
+
+    // Presets
+    presets.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var min = parseInt(this.getAttribute('data-minutes'));
+        setCountdown(min);
+      });
+    });
+
+    customMin.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var val = parseInt(this.value);
+        if (val && val > 0) setCountdown(val);
+      }
+    });
+  }
+
+  /* -------------------------------------------------------
+     APP: TERMINAL
+  ------------------------------------------------------- */
+  function initTerminal() {
+    var output = document.getElementById('terminal-output');
+    var input = document.getElementById('terminal-input');
+    var prompt = document.getElementById('terminal-prompt');
+    if (!output || !input) return;
+
+    var hist = [];
+    var histIdx = -1;
+
+    function writeLine(text, cls) {
+      var line = document.createElement('div');
+      line.className = 'term-line' + (cls ? ' ' + cls : '');
+      line.innerHTML = text;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function processCommand(cmd) {
+      var parts = cmd.trim().split(/\s+/);
+      var command = parts[0].toLowerCase();
+      var args = parts.slice(1);
+
+      switch (command) {
+        case 'help':
+          writeLine('Available commands:');
+          writeLine('  ls [path]       - list directory contents');
+          writeLine('  cd &lt;path&gt;       - change directory');
+          writeLine('  pwd             - print working directory');
+          writeLine('  mkdir &lt;name&gt;   - create directory');
+          writeLine('  touch &lt;name&gt;   - create empty file');
+          writeLine('  rm &lt;name&gt;      - remove file/directory');
+          writeLine('  cat &lt;file&gt;     - view file contents');
+          writeLine('  echo &lt;text&gt;    - print text');
+          writeLine('  clear           - clear terminal');
+          writeLine('  date            - show current date/time');
+          writeLine('  whoami          - show current user');
+          writeLine('  neofetch        - show system info');
+          writeLine('  help            - this help message');
+          break;
+
+        case 'ls': {
+          var path = args[0] || vfs.getPath();
+          var fullPath = vfs.normalize(path);
+          var items = vfs.ls(fullPath);
+          if (items.length === 0) {
+            writeLine('(empty directory)');
+          } else {
+            items.forEach(function (item) {
+              var icon = item.node.type === 'dir' ? '📁' : '📄';
+              writeLine(icon + ' ' + item.name + (item.node.type === 'dir' ? '/' : ''));
+            });
+          }
+          break;
+        }
+
+        case 'cd':
+          if (!args[0]) {
+            vfs.setPath('/');
+          } else {
+            var target = vfs.normalize(args[0]);
+            var r = vfs.resolve(target);
+            if (r && r.node.type === 'dir') {
+              vfs.setPath(target);
+            } else {
+              writeLine('cd: ' + args[0] + ': No such directory');
+            }
+          }
+          break;
+
+        case 'pwd':
+          writeLine(vfs.getPath());
+          break;
+
+        case 'mkdir':
+          if (!args[0]) { writeLine('mkdir: missing operand'); break; }
+          if (vfs.mkdir(vfs.normalize(vfs.getPath() + '/' + args[0]))) {
+            notify('Directory Created', args[0], 'success');
+          } else {
+            writeLine('mkdir: cannot create directory "' + args[0] + '": already exists');
+          }
+          break;
+
+        case 'touch':
+          if (!args[0]) { writeLine('touch: missing operand'); break; }
+          vfs.touch(vfs.normalize(vfs.getPath() + '/' + args[0]));
+          notify('File Created', args[0], 'success');
+          break;
+
+        case 'rm':
+          if (!args[0]) { writeLine('rm: missing operand'); break; }
+          if (vfs.rm(vfs.normalize(vfs.getPath() + '/' + args[0]))) {
+            notify('Removed', args[0], 'warning');
+          } else {
+            writeLine('rm: cannot remove "' + args[0] + '": not found');
+          }
+          break;
+
+        case 'cat':
+          if (!args[0]) { writeLine('cat: missing operand'); break; }
+          var content = vfs.read(vfs.normalize(vfs.getPath() + '/' + args[0]));
+          if (content !== null) {
+            writeLine(content);
+          } else {
+            writeLine('cat: ' + args[0] + ': No such file');
+          }
+          break;
+
+        case 'echo':
+          writeLine(args.join(' '));
+          break;
+
+        case 'clear':
+          output.innerHTML = '';
+          break;
+
+        case 'date':
+          writeLine(new Date().toString());
+          break;
+
+        case 'whoami':
+          writeLine('guest');
+          break;
+
+        case 'neofetch':
+          writeLine('       _______________');
+          writeLine('      /               \\');
+          writeLine('     |  PIXELOS v1.0   |');
+          writeLine('      \\_______________/');
+          writeLine('---------------------------');
+          writeLine('OS: PixelOS v1.0');
+          writeLine('Host: Hack Club Stardance');
+          writeLine('Kernel: JavaScript ES6');
+          writeLine('Uptime: ' + Math.floor((Date.now() - performance.now()) / 1000) + 's');
+          writeLine('Shell: pixel-sh v1.0');
+          writeLine('Resolution: ' + window.innerWidth + 'x' + window.innerHeight);
+          writeLine('Theme: ' + (document.body.getAttribute('data-theme') || 'day'));
+          writeLine('---------------------------');
+          break;
+
+        case '':
+          break;
+
+        default:
+          writeLine(command + ': command not found. Type "help" for available commands.');
+      }
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var cmd = input.value;
+        var pwd = vfs.getPath();
+        if (prompt) prompt.textContent = 'guest@PixelOS:' + pwd + '$';
+        writeLine('<span style="color:#888">' + prompt.textContent + '</span> ' + cmd);
+        processCommand(cmd);
+        if (cmd.trim()) {
+          hist.push(cmd);
+          histIdx = hist.length;
+        }
+        input.value = '';
+        output.scrollTop = output.scrollHeight;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (hist.length > 0 && histIdx > 0) {
+          histIdx--;
+          input.value = hist[histIdx];
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (histIdx < hist.length - 1) {
+          histIdx++;
+          input.value = hist[histIdx];
+        } else {
+          histIdx = hist.length;
+          input.value = '';
+        }
+      }
+    });
+  }
+
+  /* -------------------------------------------------------
      INIT
   ------------------------------------------------------- */
   document.addEventListener('DOMContentLoaded', function () {
@@ -1534,6 +2529,11 @@
     initClockWidget();
     initCalendarWidget();
     initSettings();
+    initExplorer();
+    initStickyNotes();
+    initSnake();
+    initTimer();
+    initTerminal();
     setInterval(updateClock, 1000);
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     window.addEventListener('resize', handleResize);

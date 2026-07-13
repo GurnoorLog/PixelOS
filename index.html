@@ -50,6 +50,10 @@
   <div class="start-item" data-app="pixel-editor"><canvas class="start-icon" data-sprite="paint"></canvas><span>Pixel Editor</span></div>
   <div class="start-item" data-app="browser"><canvas class="start-icon" data-sprite="globe"></canvas><span>Nexus Browser</span></div>
   <div class="start-item" data-app="calc"><canvas class="start-icon" data-sprite="calc"></canvas><span>Calculator</span></div>
+  <div class="start-item" data-app="explorer"><canvas class="start-icon" data-sprite="folder"></canvas><span>File Explorer</span></div>
+  <div class="start-item" data-app="snake"><canvas class="start-icon" data-sprite="snake"></canvas><span>Pixel Snake</span></div>
+  <div class="start-item" data-app="timer"><canvas class="start-icon" data-sprite="timer"></canvas><span>Timer</span></div>
+  <div class="start-item" data-app="terminal"><canvas class="start-icon" data-sprite="terminal"></canvas><span>Terminal</span></div>
   <div class="start-divider"></div>
   <div class="start-item" id="start-about"><span>▲ About PixelOS</span></div>
   <div class="start-item" id="start-settings"><span>⚙ Settings</span></div>
@@ -77,6 +81,14 @@
     <div class="desk-icon" data-app="calc" title="Calculator">
       <canvas class="desk-sprite" data-sprite="calc"></canvas>
       <span>CALC</span>
+    </div>
+    <div class="desk-icon" data-app="explorer" title="File Explorer">
+      <canvas class="desk-sprite" data-sprite="folder"></canvas>
+      <span>FILES</span>
+    </div>
+    <div class="desk-icon" data-app="terminal" title="Terminal">
+      <canvas class="desk-sprite" data-sprite="terminal"></canvas>
+      <span>TERM</span>
     </div>
   </div>
 
@@ -341,7 +353,126 @@
     <div class="window-resize-handle"></div>
   </div>
 
+  <!-- WINDOW 6: File Explorer -->
+  <div class="window" data-app="explorer" style="top:160px;left:60px;width:480px;height:380px;z-index:5;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="folder"></canvas> File Explorer</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="explorer-container">
+        <div class="explorer-toolbar">
+          <span class="explorer-path" id="explorer-path">/</span>
+          <div class="explorer-actions">
+            <button class="pixel-btn explorer-btn" id="explorer-new-folder">+ FOLDER</button>
+          </div>
+        </div>
+        <div class="explorer-content">
+          <div class="explorer-sidebar">
+            <div class="explorer-sidebar-item active" data-path="/">📁 Root</div>
+            <div class="explorer-sidebar-item" data-path="/Documents">📁 Documents</div>
+            <div class="explorer-sidebar-item" data-path="/Pictures">📁 Pictures</div>
+            <div class="explorer-sidebar-item" data-path="/Music">📁 Music</div>
+            <div class="explorer-sidebar-item" data-path="/Notes">📁 Notes</div>
+          </div>
+          <div class="explorer-files" id="explorer-files"></div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 7: Pixel Snake -->
+  <div class="window" data-app="snake" style="top:90px;left:820px;width:360px;height:400px;z-index:4;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="snake"></canvas> Pixel Snake</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="snake-container">
+        <div class="snake-header">
+          <span class="snake-score">SCORE: <span id="snake-score">0</span></span>
+          <span class="snake-best">BEST: <span id="snake-best">0</span></span>
+        </div>
+        <canvas id="snake-canvas" width="300" height="300"></canvas>
+        <div class="snake-footer">
+          <button class="pixel-btn" id="snake-restart">↺ RESTART</button>
+          <span class="snake-hint">arrow keys / WASD</span>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 8: Timer -->
+  <div class="window" data-app="timer" style="top:130px;left:420px;width:340px;height:380px;z-index:4;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="timer"></canvas> Timer</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="timer-container">
+        <div class="timer-mode-bar">
+          <button class="timer-mode-btn active" data-mode="stopwatch">⏱ STOPWATCH</button>
+          <button class="timer-mode-btn" data-mode="countdown">⏳ COUNTDOWN</button>
+        </div>
+        <div class="timer-display" id="timer-display">00:00.0</div>
+        <div class="timer-controls">
+          <button class="pixel-btn timer-btn" id="timer-start">▶ START</button>
+          <button class="pixel-btn timer-btn" id="timer-lap">⏱ LAP</button>
+          <button class="pixel-btn timer-btn" id="timer-reset">↺ RESET</button>
+        </div>
+        <div class="timer-presets" id="timer-presets">
+          <button class="pixel-btn timer-preset-btn" data-minutes="1">1 min</button>
+          <button class="pixel-btn timer-preset-btn" data-minutes="5">5 min</button>
+          <button class="pixel-btn timer-preset-btn" data-minutes="10">10 min</button>
+          <input type="number" class="timer-custom-input" id="timer-custom-min" placeholder="custom min" min="1" max="999">
+        </div>
+        <div class="timer-laps" id="timer-laps"></div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 9: Terminal -->
+  <div class="window" data-app="terminal" style="top:200px;left:200px;width:520px;height:360px;z-index:3;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="terminal"></canvas> Terminal</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body terminal-body">
+      <div class="terminal-output" id="terminal-output">
+        <div class="term-line">PixelOS Terminal v1.0</div>
+        <div class="term-line">Type 'help' for available commands.</div>
+        <div class="term-line">&nbsp;</div>
+      </div>
+      <div class="terminal-input-row">
+        <span class="terminal-prompt" id="terminal-prompt">guest@PixelOS:/$</span>
+        <input type="text" class="terminal-input" id="terminal-input" spellcheck="false" autocomplete="off">
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
 </main>
+
+<!-- STICKY NOTES CONTAINER -->
+<div id="sticky-notes-container"></div>
+
+<!-- NOTIFICATION CONTAINER -->
+<div id="notification-container"></div>
 
 <footer id="dock">
   <div class="dock-icon" data-app="lofi" title="Lo-Fi Cafe">
@@ -363,6 +494,22 @@
   <div class="dock-icon" data-app="calc" title="Calculator">
     <canvas class="dock-sprite" data-sprite="calc"></canvas>
     <span class="dock-label">CALC</span>
+  </div>
+  <div class="dock-icon" data-app="explorer" title="File Explorer">
+    <canvas class="dock-sprite" data-sprite="folder"></canvas>
+    <span class="dock-label">FILES</span>
+  </div>
+  <div class="dock-icon" data-app="terminal" title="Terminal">
+    <canvas class="dock-sprite" data-sprite="terminal"></canvas>
+    <span class="dock-label">TERM</span>
+  </div>
+  <div class="dock-icon" data-app="snake" title="Pixel Snake">
+    <canvas class="dock-sprite" data-sprite="snake"></canvas>
+    <span class="dock-label">SNAKE</span>
+  </div>
+  <div class="dock-icon" data-app="timer" title="Timer">
+    <canvas class="dock-sprite" data-sprite="timer"></canvas>
+    <span class="dock-label">TIMER</span>
   </div>
 </footer>
 
