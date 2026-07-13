@@ -1477,7 +1477,8 @@
         t.closest('button') || t.closest('input') || t.closest('textarea') ||
         t.closest('select') || t.closest('iframe') || t.closest('.dock-icon') ||
         t.closest('.sticky-note') || t.closest('.explorer-item') ||
-        t.closest('.explorer-sidebar-item') || t.closest('.terminal-input')) return;
+        t.closest('.explorer-sidebar-item') || t.closest('.terminal-input') ||
+        t.closest('.notepad-container')) return;
     createSparkles(e.clientX, e.clientY);
   });
 
@@ -1578,6 +1579,23 @@
       '001110111100',
       '000111111000',
       '000000000000',
+    ],
+  };
+  SPRITES.notepad = {
+    palette: ['#fbbf24', '#f59e0b', '#fff'],
+    rows: [
+      '000111111100',
+      '001111111110',
+      '011111111111',
+      '011000000011',
+      '011011110011',
+      '011011110011',
+      '011011110011',
+      '011011110011',
+      '011011110011',
+      '011000000011',
+      '011111111110',
+      '001111111100',
     ],
   };
 
@@ -1816,6 +1834,32 @@
   }
 
   /* -------------------------------------------------------
+     GLOBAL: open file in Notepad
+  ------------------------------------------------------- */
+  function openInNotepad(path) {
+    var win = document.querySelector('.window[data-app="notepad"]');
+    if (!win) return;
+    openApp('notepad');
+    var textarea = document.getElementById('notepad-textarea');
+    var filenameInput = document.getElementById('notepad-filename');
+    if (!textarea || !filenameInput) return;
+    var content = vfs.read(path);
+    if (content === null) return;
+    textarea.value = content;
+    var parts = path.split('/').filter(Boolean);
+    var name = parts.pop();
+    filenameInput.value = name;
+    var statusMsg = document.getElementById('notepad-status-msg');
+    if (statusMsg) statusMsg.textContent = 'opened: ' + name;
+    var charCount = document.getElementById('notepad-char-count');
+    if (charCount) charCount.textContent = content.length + ' chars';
+    // mark clean
+    setTimeout(function () {
+      if (textarea.dataset) textarea.dataset.dirty = '';
+    }, 0);
+  }
+
+  /* -------------------------------------------------------
      APP: FILE EXPLORER
   ------------------------------------------------------- */
   function initExplorer() {
@@ -1841,6 +1885,8 @@
         el.addEventListener('dblclick', function () {
           if (item.node.type === 'dir') {
             renderDir(vfs.normalize(path + '/' + item.name));
+          } else if (item.name.endsWith('.txt')) {
+            openInNotepad(vfs.normalize(path + '/' + item.name));
           }
         });
         el.addEventListener('click', function (e) {
@@ -2254,13 +2300,18 @@
     var lapCount = 0;
     var timerInterval = null;
     var countdownTarget = 0;
+    var prevTenth = -1;
 
     function formatTime(ms) {
       var totalSec = Math.floor(ms / 1000);
       var min = Math.floor(totalSec / 60);
       var sec = totalSec % 60;
-      var tenth = Math.floor((ms % 1000) / 100);
-      return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + tenth;
+      var centi = Math.floor((ms % 1000) / 10);
+      return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + String(centi).padStart(2, '0');
+    }
+
+    function updateLapBtn() {
+      lapBtn.disabled = mode !== 'stopwatch' || !running;
     }
 
     function updateDisplay() {
@@ -2275,6 +2326,7 @@
             running = false;
             clearInterval(timerInterval);
             startBtn.textContent = '▶ START';
+            updateLapBtn();
             notify('Timer Done', 'Countdown finished!', 'success');
           }
         }
@@ -2291,14 +2343,16 @@
       }
       running = true;
       startBtn.textContent = '⏸ PAUSE';
-      lapBtn.disabled = (mode === 'stopwatch') ? false : true;
-      timerInterval = setInterval(updateDisplay, 100);
+      updateLapBtn();
+      timerInterval = setInterval(updateDisplay, 50);
+      prevTenth = -1;
     }
 
     function pauseTimer() {
       running = false;
       clearInterval(timerInterval);
       startBtn.textContent = '▶ RESUME';
+      updateLapBtn();
     }
 
     function resetTimer() {
@@ -2308,30 +2362,38 @@
       countdownTarget = 0;
       lapCount = 0;
       startBtn.textContent = '▶ START';
-      display.textContent = '00:00.0';
+      display.textContent = '00:00.00';
       if (lapsEl) lapsEl.innerHTML = '';
-      startBtn.disabled = false;
+      updateLapBtn();
     }
 
     function setCountdown(minutes) {
+      if (minutes <= 0) return;
       if (running) pauseTimer();
       mode = 'countdown';
       countdownTarget = minutes * 60 * 1000;
       elapsed = countdownTarget;
       display.textContent = formatTime(elapsed);
       document.querySelectorAll('.timer-mode-btn').forEach(function (b) {
-        b.classList.toggle('active', b.getAttribute('data-mode') === 'countdown');
+        b.classList.remove('active');
+        if (b.getAttribute('data-mode') === 'countdown') b.classList.add('active');
       });
+      updateLapBtn();
+    }
+
+    function switchMode(newMode) {
+      if (running) pauseTimer();
+      mode = newMode;
+      document.querySelectorAll('.timer-mode-btn').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+      });
+      resetTimer();
     }
 
     // Mode toggle
     document.querySelectorAll('.timer-mode-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        if (running) pauseTimer();
-        mode = this.getAttribute('data-mode');
-        document.querySelectorAll('.timer-mode-btn').forEach(function (b) { b.classList.remove('active'); });
-        this.classList.add('active');
-        resetTimer();
+        switchMode(this.getAttribute('data-mode'));
       });
     });
 
@@ -2344,6 +2406,14 @@
       }
     });
 
+    // Keyboard shortcut: Space to start/pause
+    document.addEventListener('keydown', function (e) {
+      if (e.target.closest('.timer-container') && e.key === ' ' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        startBtn.click();
+      }
+    });
+
     lapBtn.addEventListener('click', function () {
       if (mode !== 'stopwatch' || !running) return;
       lapCount++;
@@ -2351,6 +2421,7 @@
       li.className = 'timer-lap-item';
       li.innerHTML = '<span>Lap ' + lapCount + '</span><span>' + formatTime(elapsed) + '</span>';
       if (lapsEl) lapsEl.appendChild(li);
+      lapsEl.scrollTop = lapsEl.scrollHeight;
     });
 
     resetBtn.addEventListener('click', resetTimer);
@@ -2360,15 +2431,152 @@
       btn.addEventListener('click', function () {
         var min = parseInt(this.getAttribute('data-minutes'));
         setCountdown(min);
+        switchMode('countdown');
       });
     });
 
     customMin.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
         var val = parseInt(this.value);
-        if (val && val > 0) setCountdown(val);
+        if (val && val > 0) {
+          setCountdown(val);
+          switchMode('countdown');
+        }
       }
     });
+
+    resetTimer();
+  }
+
+  /* -------------------------------------------------------
+     APP: NOTEPAD (VFS-integrated text editor)
+  ------------------------------------------------------- */
+  function initNotepad() {
+    var textarea = document.getElementById('notepad-textarea');
+    var filenameInput = document.getElementById('notepad-filename');
+    var saveBtn = document.getElementById('notepad-save');
+    var openBtn = document.getElementById('notepad-open');
+    var newBtn = document.getElementById('notepad-new');
+    var statusMsg = document.getElementById('notepad-status-msg');
+    var charCount = document.getElementById('notepad-char-count');
+    if (!textarea || !filenameInput) return;
+
+    var dirty = false;
+    var currentFile = null;
+
+    function setStatus(msg) { if (statusMsg) statusMsg.textContent = msg; }
+    function updateCharCount() {
+      if (charCount) charCount.textContent = textarea.value.length + ' chars';
+    }
+
+    textarea.addEventListener('input', function () {
+      dirty = true;
+      updateCharCount();
+      var name = filenameInput.value.replace(/\.txt$/i, '') + '.txt';
+      if (filenameInput.value.indexOf('.txt') === -1) filenameInput.value = name;
+      setStatus('unsaved changes');
+    });
+
+    function getFilePath() {
+      var name = filenameInput.value.trim();
+      if (!name) return null;
+      if (!name.endsWith('.txt')) name += '.txt';
+      return vfs.normalize(vfs.getPath() + '/' + name);
+    }
+
+    function saveFile() {
+      var path = getFilePath();
+      if (!path) { setStatus('enter a filename'); return; }
+      var name = path.split('/').filter(Boolean).pop();
+      var content = textarea.value;
+      var existing = vfs.read(path);
+      if (existing !== null) {
+        vfs.write(path, content);
+      } else {
+        vfs.touch(path, content);
+      }
+      dirty = false;
+      currentFile = path;
+      filenameInput.value = name;
+      setStatus('saved: ' + name);
+      notify('File Saved', name, 'success');
+    }
+
+    function loadFile(path) {
+      if (dirty && !confirm('Discard unsaved changes?')) return;
+      var content = vfs.read(path);
+      if (content === null) { setStatus('file not found'); return; }
+      textarea.value = content;
+      var parts = path.split('/').filter(Boolean);
+      var name = parts.pop();
+      filenameInput.value = name;
+      currentFile = path;
+      dirty = false;
+      updateCharCount();
+      setStatus('opened: ' + name);
+      notify('File Opened', name, 'info');
+    }
+
+    function newFile() {
+      if (dirty && !confirm('Discard unsaved changes?')) return;
+      textarea.value = '';
+      filenameInput.value = 'untitled.txt';
+      currentFile = null;
+      dirty = false;
+      updateCharCount();
+      setStatus('new file');
+    }
+
+    function showFileList() {
+      removeFileList();
+      var items = vfs.ls(vfs.getPath());
+      var txtFiles = items.filter(function (item) {
+        return item.node.type === 'file' && item.name.endsWith('.txt');
+      });
+      if (txtFiles.length === 0) { setStatus('no .txt files found'); return; }
+
+      var rect = openBtn.getBoundingClientRect();
+      var list = document.createElement('div');
+      list.className = 'notepad-file-list';
+      list.style.left = rect.left + 'px';
+      list.style.top = (rect.bottom + 4) + 'px';
+
+      txtFiles.forEach(function (item) {
+        var el = document.createElement('div');
+        el.className = 'notepad-file-list-item';
+        el.innerHTML = '📄 ' + item.name;
+        el.addEventListener('click', function () {
+          loadFile(vfs.normalize(vfs.getPath() + '/' + item.name));
+          removeFileList();
+        });
+        list.appendChild(el);
+      });
+
+      document.body.appendChild(list);
+      setTimeout(function () {
+        document.addEventListener('click', removeFileList, { once: true });
+      }, 0);
+    }
+
+    function removeFileList() {
+      var el = document.querySelector('.notepad-file-list');
+      if (el) el.remove();
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+      if (e.target.closest('.notepad-container')) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveFile(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'o') { e.preventDefault(); showFileList(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); newFile(); }
+      }
+    });
+
+    saveBtn.addEventListener('click', saveFile);
+    openBtn.addEventListener('click', showFileList);
+    newBtn.addEventListener('click', newFile);
+
+    newFile();
   }
 
   /* -------------------------------------------------------
@@ -2635,6 +2843,7 @@
     initStickyNotes();
     initSnake();
     initTimer();
+    initNotepad();
     initTerminal();
     setInterval(updateClock, 1000);
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);

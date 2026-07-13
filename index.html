@@ -67,6 +67,7 @@
   <div class="start-item" data-app="snake"><canvas class="start-icon" data-sprite="snake"></canvas><span>Pixel Snake</span></div>
   <div class="start-item" data-app="timer"><canvas class="start-icon" data-sprite="timer"></canvas><span>Timer</span></div>
   <div class="start-item" data-app="terminal"><canvas class="start-icon" data-sprite="terminal"></canvas><span>Terminal</span></div>
+  <div class="start-item" data-app="notepad"><canvas class="start-icon" data-sprite="notepad"></canvas><span>Notepad</span></div>
   <div class="start-divider"></div>
   <div class="start-item" id="start-about"><span>▲ About PixelOS</span></div>
   <div class="start-item" id="start-settings"><span>⚙ Settings</span></div>
@@ -102,6 +103,10 @@
     <div class="desk-icon" data-app="terminal" title="Terminal">
       <canvas class="desk-sprite" data-sprite="terminal"></canvas>
       <span>TERM</span>
+    </div>
+    <div class="desk-icon" data-app="notepad" title="Notepad">
+      <canvas class="desk-sprite" data-sprite="notepad"></canvas>
+      <span>NOTES</span>
     </div>
   </div>
 
@@ -456,7 +461,39 @@
     <div class="window-resize-handle"></div>
   </div>
 
-  <!-- WINDOW 9: Terminal -->
+  <!-- WINDOW 9: Notepad -->
+  <div class="window" data-app="notepad" style="top:130px;left:280px;width:400px;height:380px;z-index:5;">
+    <div class="window-header">
+      <span class="window-title"><canvas class="win-icon" data-sprite="notepad"></canvas> Notepad</span>
+      <div class="window-controls">
+        <button class="win-min" aria-label="Minimize">─</button>
+        <button class="win-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="notepad-container">
+        <div class="notepad-toolbar">
+          <div class="notepad-file-row">
+            <input type="text" class="notepad-filename" id="notepad-filename" value="untitled.txt" spellcheck="false">
+            <span class="notepad-ext">.txt</span>
+          </div>
+          <div class="notepad-actions">
+            <button class="pixel-btn notepad-btn" id="notepad-save">💾 SAVE</button>
+            <button class="pixel-btn notepad-btn" id="notepad-open">📂 OPEN</button>
+            <button class="pixel-btn notepad-btn" id="notepad-new">📄 NEW</button>
+          </div>
+        </div>
+        <textarea class="notepad-textarea" id="notepad-textarea" placeholder="type something..." spellcheck="false"></textarea>
+        <div class="notepad-status">
+          <span id="notepad-status-msg">ready</span>
+          <span id="notepad-char-count">0 chars</span>
+        </div>
+      </div>
+    </div>
+    <div class="window-resize-handle"></div>
+  </div>
+
+  <!-- WINDOW 10: Terminal -->
   <div class="window" data-app="terminal" style="top:200px;left:200px;width:520px;height:360px;z-index:3;">
     <div class="window-header">
       <span class="window-title"><canvas class="win-icon" data-sprite="terminal"></canvas> Terminal</span>
@@ -523,6 +560,10 @@
   <div class="dock-icon" data-app="timer" title="Timer">
     <canvas class="dock-sprite" data-sprite="timer"></canvas>
     <span class="dock-label">TIMER</span>
+  </div>
+  <div class="dock-icon" data-app="notepad" title="Notepad">
+    <canvas class="dock-sprite" data-sprite="notepad"></canvas>
+    <span class="dock-label">NOTES</span>
   </div>
 </footer>
 
