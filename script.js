@@ -548,44 +548,265 @@
      APP: GLASS DIARY
   ------------------------------------------------------- */
   function initDiary() {
-    var textarea = document.querySelector('.diary-input');
-    var charCount = document.querySelector('.diary-char-count');
-    var clearBtn = document.getElementById('diary-clear');
-    var exportBtn = document.getElementById('diary-export');
-    var dateDisplay = document.querySelector('.diary-date');
+    var textarea = document.getElementById('diary-input');
+    var charCount = document.getElementById('diary-char-count');
+    var dateDisplay = document.getElementById('diary-date');
+    var saveStatus = document.getElementById('diary-save-status');
+    var newBtn = document.getElementById('diary-new');
+    var calBtn = document.getElementById('diary-cal-btn');
+    if (!textarea) return;
 
-    if (dateDisplay) {
-      var now = new Date();
-      dateDisplay.textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+    var currentDate = new Date();
+    var currentEntry = null; // full path of current entry
+    var dirty = false;
+    var saveTimer = null;
+
+    // Ensure ~/Diary/ exists in VFS
+    vfs.mkdir('/Diary');
+
+    function dateKey(d) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
     }
 
-    if (textarea && charCount) {
-      textarea.addEventListener('input', function () {
-        charCount.textContent = this.value.length + ' chars';
+    function entryPath(d) {
+      return vfs.normalize('/Diary/' + dateKey(d) + '.txt');
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
       });
     }
 
-    if (clearBtn && textarea) {
-      clearBtn.addEventListener('click', function () {
+    function updateDateDisplay() {
+      if (dateDisplay) dateDisplay.textContent = formatDate(currentDate);
+    }
+
+    function updateCharCount() {
+      if (charCount) charCount.textContent = textarea.value.length;
+    }
+
+    function setStatus(msg) {
+      if (saveStatus) saveStatus.textContent = msg;
+    }
+
+    function loadEntry(d) {
+      currentDate = d;
+      var path = entryPath(d);
+      var content = vfs.read(path);
+      textarea.value = content !== null ? content : '';
+      currentEntry = content !== null ? path : null;
+      dirty = false;
+      updateDateDisplay();
+      updateCharCount();
+      if (content !== null) {
+        setStatus('📖 ' + dateKey(d));
+      } else {
+        setStatus('📝 new entry');
+      }
+    }
+
+    function saveEntry() {
+      var content = textarea.value.trim();
+      if (!content) return;
+      var path = entryPath(currentDate);
+      vfs.touch(path, textarea.value);
+      currentEntry = path;
+      dirty = false;
+      setStatus('💾 saved ' + dateKey(currentDate));
+    }
+
+    // Load today's entry on open
+    loadEntry(new Date());
+
+    // Auto-save on blur
+    textarea.addEventListener('blur', function () {
+      if (dirty) saveEntry();
+    });
+
+    // Auto-save periodically (30s debounce on input)
+    textarea.addEventListener('input', function () {
+      dirty = true;
+      setStatus('✏️ writing...');
+      updateCharCount();
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () {
+        if (dirty) saveEntry();
+      }, 30000);
+    });
+
+    // New entry — save current, start fresh
+    newBtn.addEventListener('click', function () {
+      if (dirty) saveEntry();
+      var today = new Date();
+      if (dateKey(today) === dateKey(currentDate)) {
+        // already on today — clear
+        if (textarea.value && !confirm('Clear today\'s entry?')) return;
         textarea.value = '';
-        if (charCount) charCount.textContent = '0 chars';
-        textarea.focus();
-      });
+        dirty = true;
+        updateCharCount();
+        setStatus('📝 new entry');
+      } else {
+        loadEntry(today);
+      }
+      textarea.focus();
+    });
+
+    // Calendar popup
+    var calPopup = null;
+
+    function removeCalPopup() {
+      if (calPopup) { calPopup.remove(); calPopup = null; }
     }
 
-    if (exportBtn && textarea) {
-      exportBtn.addEventListener('click', function () {
-        var text = textarea.value;
-        if (!text) return;
-        var blob = new Blob([text], { type: 'text/plain' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'glass-diary-' + Date.now() + '.txt';
-        a.click();
-        URL.revokeObjectURL(url);
-      });
+    function hasEntryOnDate(d) {
+      var path = entryPath(d);
+      return vfs.read(path) !== null;
     }
+
+    function renderCalPopup(anchorEl, year, month) {
+      removeCalPopup();
+
+      var rect = anchorEl.getBoundingClientRect();
+      calPopup = document.createElement('div');
+      calPopup.className = 'diary-cal-popup';
+
+      // Header
+      var header = document.createElement('div');
+      header.className = 'diary-cal-header';
+
+      var prevBtn = document.createElement('button');
+      prevBtn.className = 'diary-cal-nav';
+      prevBtn.innerHTML = '‹';
+      prevBtn.addEventListener('click', function () {
+        month--;
+        if (month < 0) { month = 11; year--; }
+        renderCalPopup(anchorEl, year, month);
+      });
+      header.appendChild(prevBtn);
+
+      var monthLabel = document.createElement('span');
+      monthLabel.className = 'diary-cal-month';
+      var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      monthLabel.textContent = monthNames[month] + ' ' + year;
+      header.appendChild(monthLabel);
+
+      var nextBtn = document.createElement('button');
+      nextBtn.className = 'diary-cal-nav';
+      nextBtn.innerHTML = '›';
+      nextBtn.addEventListener('click', function () {
+        month++;
+        if (month > 11) { month = 0; year++; }
+        renderCalPopup(anchorEl, year, month);
+      });
+      header.appendChild(nextBtn);
+
+      calPopup.appendChild(header);
+
+      // Day names
+      var dayNames = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+      var grid = document.createElement('div');
+      grid.className = 'diary-cal-grid';
+      dayNames.forEach(function (n) {
+        var el = document.createElement('div');
+        el.className = 'diary-cal-dayname';
+        el.textContent = n;
+        grid.appendChild(el);
+      });
+
+      // Days
+      var firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+      var daysInMonth = new Date(year, month + 1, 0).getDate();
+      var daysInPrev = new Date(year, month, 0).getDate();
+      var firstCol = (firstDay === 0 ? 6 : firstDay - 1); // Mon first
+
+      var totalCells = Math.ceil((firstCol + daysInMonth) / 7) * 7;
+
+      for (var i = 0; i < totalCells; i++) {
+        var el = document.createElement('div');
+        el.className = 'diary-cal-day';
+
+        var d, dObj;
+        if (i < firstCol) {
+          // previous month
+          d = daysInPrev - firstCol + i + 1;
+          dObj = new Date(year, month - 1, d);
+          el.classList.add('other-month');
+        } else if (i >= firstCol + daysInMonth) {
+          // next month
+          d = i - (firstCol + daysInMonth) + 1;
+          dObj = new Date(year, month + 1, d);
+          el.classList.add('other-month');
+        } else {
+          d = i - firstCol + 1;
+          dObj = new Date(year, month, d);
+        }
+
+        el.textContent = dObj.getDate();
+
+        // Highlight today
+        var today = new Date();
+        if (dObj.getFullYear() === today.getFullYear() && dObj.getMonth() === today.getMonth() && dObj.getDate() === today.getDate()) {
+          el.classList.add('today');
+        }
+
+        // Highlight selected date
+        if (dObj.getFullYear() === currentDate.getFullYear() && dObj.getMonth() === currentDate.getMonth() && dObj.getDate() === currentDate.getDate()) {
+          el.classList.add('selected');
+        }
+
+        // Dot if entry exists
+        if (hasEntryOnDate(dObj)) {
+          el.classList.add('has-entry');
+        }
+
+        el.addEventListener('click', (function (dateObj) {
+          return function () {
+            loadEntry(dateObj);
+            removeCalPopup();
+          };
+        })(dObj));
+
+        grid.appendChild(el);
+      }
+
+      calPopup.appendChild(grid);
+
+      // Today button
+      var todayBtn = document.createElement('button');
+      todayBtn.className = 'diary-cal-today-btn';
+      todayBtn.textContent = 'TODAY';
+      todayBtn.addEventListener('click', function () {
+        loadEntry(new Date());
+        removeCalPopup();
+      });
+      calPopup.appendChild(todayBtn);
+
+      calPopup.style.left = Math.min(rect.left, window.innerWidth - 280) + 'px';
+      calPopup.style.top = (rect.bottom + 4) + 'px';
+      document.body.appendChild(calPopup);
+
+      // Close on click outside
+      setTimeout(function () {
+        document.addEventListener('click', function calClose(e) {
+          if (!e.target.closest('.diary-cal-popup') && !e.target.closest('#diary-cal-btn')) {
+            removeCalPopup();
+            document.removeEventListener('click', calClose);
+          }
+        });
+      }, 0);
+    }
+
+    calBtn.addEventListener('click', function () {
+      if (calPopup) {
+        removeCalPopup();
+      } else {
+        renderCalPopup(calBtn, currentDate.getFullYear(), currentDate.getMonth());
+      }
+    });
   }
 
   /* -------------------------------------------------------
@@ -1514,7 +1735,8 @@
         t.closest('select') || t.closest('iframe') || t.closest('.dock-icon') ||
         t.closest('.sticky-note') || t.closest('.explorer-item') ||
         t.closest('.explorer-sidebar-item') || t.closest('.terminal-input') ||
-        t.closest('.notepad-container') || t.closest('.saveas-overlay')) return;
+        t.closest('.notepad-container') || t.closest('.saveas-overlay') ||
+        t.closest('.diary-container') || t.closest('.diary-cal-popup')) return;
     createSparkles(e.clientX, e.clientY);
   });
 

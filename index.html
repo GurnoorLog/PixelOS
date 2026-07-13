@@ -6,7 +6,7 @@
   <title>PixelOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Cedarville+Cursive&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body data-theme="day">
@@ -205,7 +205,7 @@
   </div>
 
   <!-- WINDOW 2: Glass Diary -->
-  <div class="window" data-app="diary" style="top:100px;left:480px;width:400px;height:340px;z-index:8;">
+  <div class="window" data-app="diary" style="top:100px;left:480px;width:420px;height:380px;z-index:8;">
     <div class="window-header">
       <span class="window-title"><canvas class="win-icon" data-sprite="diary"></canvas> Glass Diary</span>
       <div class="window-controls">
@@ -216,13 +216,14 @@
     <div class="window-body">
       <div class="diary-container">
         <div class="diary-toolbar">
-          <span class="pixel-text diary-date"></span>
-          <span class="pixel-text diary-char-count">0 chars</span>
+          <span class="diary-date" id="diary-date"></span>
+          <span class="diary-save-status" id="diary-save-status">📝 new entry</span>
         </div>
-        <textarea class="diary-input" placeholder="type your thoughts here...&#10;&#10;every character echoes in glass." spellcheck="false"></textarea>
+        <textarea class="diary-input" id="diary-input" placeholder="Dear Diary,&#10;&#10;what's on your mind today?" spellcheck="false"></textarea>
         <div class="diary-footer">
-          <button class="pixel-btn" id="diary-clear">⌫ CLEAR</button>
-          <button class="pixel-btn" id="diary-export">↓ EXPORT</button>
+          <span class="diary-char-count" id="diary-char-count">0</span>
+          <button class="pixel-btn diary-btn" id="diary-new">📄 NEW</button>
+          <button class="pixel-btn diary-btn" id="diary-cal-btn">📅 CALENDAR</button>
         </div>
       </div>
     </div>
