@@ -720,7 +720,6 @@
 
     // Export
     document.getElementById('editor-export').addEventListener('click', function () {
-      // Draw without grid
       var exportCanvas = document.createElement('canvas');
       exportCanvas.width = canvas.width;
       exportCanvas.height = canvas.height;
@@ -739,6 +738,43 @@
       a.download = 'pixel-art-' + Date.now() + '.png';
       a.href = exportCanvas.toDataURL();
       a.click();
+    });
+
+    // Save to VFS
+    document.getElementById('editor-save').addEventListener('click', function () {
+      var name = prompt('Save pixel art as:', 'untitled.pxl');
+      if (!name) return;
+      if (!name.endsWith('.pxl')) name += '.pxl';
+      var path = vfs.normalize(vfs.getPath() + '/' + name);
+      var data = JSON.stringify(pixels);
+      vfs.touch(path, data);
+      notify('Pixel Art Saved', name, 'success');
+    });
+
+    // Load from VFS
+    document.getElementById('editor-load').addEventListener('click', function () {
+      var items = vfs.ls(vfs.getPath()).filter(function (item) {
+        return item.node.type === 'file' && item.name.endsWith('.pxl');
+      });
+      if (items.length === 0) { notify('Pixel Editor', 'No .pxl files found', 'info'); return; }
+      var names = items.map(function (item) { return item.name; });
+      var name = prompt('Load pixel art:\n' + names.join('\n'), names[0]);
+      if (!name || !name.endsWith('.pxl')) return;
+      var path = vfs.normalize(vfs.getPath() + '/' + name);
+      var data = vfs.read(path);
+      if (!data) { notify('Pixel Editor', 'Failed to load file', 'error'); return; }
+      try {
+        var loaded = JSON.parse(data);
+        if (loaded.length === GRID * GRID) {
+          pixels = loaded;
+          drawGrid();
+          notify('Pixel Art Loaded', name, 'success');
+        } else {
+          notify('Pixel Editor', 'Invalid pixel data', 'error');
+        }
+      } catch (e) {
+        notify('Pixel Editor', 'Invalid file format', 'error');
+      }
     });
 
     drawGrid();
@@ -2432,7 +2468,6 @@
       btn.addEventListener('click', function () {
         var min = parseInt(this.getAttribute('data-minutes'));
         setCountdown(min);
-        switchMode('countdown');
       });
     });
 
@@ -2441,10 +2476,38 @@
         var val = parseInt(this.value);
         if (val && val > 0) {
           setCountdown(val);
-          switchMode('countdown');
         }
       }
     });
+
+    // Custom countdown inputs (hr + min + sec)
+    var customHr = document.getElementById('timer-custom-hr');
+    var customSec = document.getElementById('timer-custom-sec');
+    [customHr, customSec].forEach(function (inp) {
+      if (!inp) return;
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') doCustomCountdown();
+      });
+    });
+    document.getElementById('timer-custom-set').addEventListener('click', doCustomCountdown);
+
+    function doCustomCountdown() {
+      var h = parseInt(customHr ? customHr.value : 0) || 0;
+      var m = parseInt(customMin ? customMin.value : 0) || 0;
+      var s = parseInt(customSec ? customSec.value : 0) || 0;
+      var totalMs = (h * 3600 + m * 60 + s) * 1000;
+      if (totalMs <= 0) { notify('Timer', 'Enter a time greater than 0', 'warning'); return; }
+      if (running) pauseTimer();
+      mode = 'countdown';
+      countdownTarget = totalMs;
+      elapsed = countdownTarget;
+      display.textContent = formatTime(elapsed);
+      document.querySelectorAll('.timer-mode-btn').forEach(function (b) {
+        b.classList.remove('active');
+        if (b.getAttribute('data-mode') === 'countdown') b.classList.add('active');
+      });
+      updateLapBtn();
+    }
 
     resetTimer();
   }

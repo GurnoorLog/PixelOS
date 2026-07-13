@@ -259,6 +259,8 @@
             <button class="pixel-btn editor-tool" data-tool="fill">🪣</button>
             <button class="pixel-btn" id="editor-clear">🗑️</button>
             <button class="pixel-btn" id="editor-export">↓</button>
+            <button class="pixel-btn editor-save-btn" id="editor-save">💾</button>
+            <button class="pixel-btn editor-load-btn" id="editor-load">📂</button>
           </div>
         </div>
         <div class="editor-canvas-wrap">
@@ -443,7 +445,7 @@
           <button class="timer-mode-btn active" data-mode="stopwatch">⏱ STOPWATCH</button>
           <button class="timer-mode-btn" data-mode="countdown">⏳ COUNTDOWN</button>
         </div>
-        <div class="timer-display" id="timer-display">00:00.0</div>
+        <div class="timer-display" id="timer-display">00:00.00</div>
         <div class="timer-controls">
           <button class="pixel-btn timer-btn" id="timer-start">▶ START</button>
           <button class="pixel-btn timer-btn" id="timer-lap">⏱ LAP</button>
@@ -453,7 +455,14 @@
           <button class="pixel-btn timer-preset-btn" data-minutes="1">1 min</button>
           <button class="pixel-btn timer-preset-btn" data-minutes="5">5 min</button>
           <button class="pixel-btn timer-preset-btn" data-minutes="10">10 min</button>
-          <input type="number" class="timer-custom-input" id="timer-custom-min" placeholder="custom min" min="1" max="999">
+        </div>
+        <div class="timer-custom-row">
+          <input type="number" class="timer-custom-input" id="timer-custom-hr" placeholder="hr" min="0" max="99" value="0">
+          <span class="timer-custom-sep">:</span>
+          <input type="number" class="timer-custom-input" id="timer-custom-min" placeholder="min" min="0" max="59" value="0">
+          <span class="timer-custom-sep">:</span>
+          <input type="number" class="timer-custom-input" id="timer-custom-sec" placeholder="sec" min="0" max="59" value="0">
+          <button class="pixel-btn timer-btn timer-custom-set" id="timer-custom-set">SET</button>
         </div>
         <div class="timer-laps" id="timer-laps"></div>
       </div>
