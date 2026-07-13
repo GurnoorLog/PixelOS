@@ -3291,6 +3291,11 @@
     document.addEventListener('mouseup', function () {
       resizeState = null;
     });
+
+    // Start with all windows closed
+    document.querySelectorAll('.window').forEach(function (win) {
+      win.style.display = 'none';
+    });
   });
 
 })();
