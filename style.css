@@ -1281,6 +1281,7 @@ body[data-theme="night"] #rain-canvas {
   border-radius: 8px;
   padding: 12px;
   min-width: 240px;
+  max-height: 280px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
 }
 .diary-cal-header {

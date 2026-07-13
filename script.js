@@ -841,8 +841,13 @@
       });
       calPopup.appendChild(todayBtn);
 
-      calPopup.style.left = Math.min(rect.left, window.innerWidth - 280) + 'px';
-      calPopup.style.top = (rect.bottom + 4) + 'px';
+      calPopup.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 280)) + 'px';
+      var popupHeight = 280;
+      if (rect.bottom + 4 + popupHeight > window.innerHeight && rect.top - 4 > popupHeight) {
+        calPopup.style.top = (rect.top - 4 - popupHeight) + 'px';
+      } else {
+        calPopup.style.top = Math.min(rect.bottom + 4, window.innerHeight - popupHeight - 4) + 'px';
+      }
       document.body.appendChild(calPopup);
 
       // Close on click outside
