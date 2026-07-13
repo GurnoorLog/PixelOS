@@ -447,12 +447,20 @@
       el.className = 'taskbar-app';
       if (!win.classList.contains('minimized')) el.classList.add('active');
       if (spriteCanvas) {
-        var clone = spriteCanvas.cloneNode(true);
-        clone.width = 16;
-        clone.height = 16;
-        clone.style.width = '16px';
-        clone.style.height = '16px';
-        el.appendChild(clone);
+        var spriteId = spriteCanvas.getAttribute('data-sprite');
+        var icon = document.createElement('canvas');
+        icon.className = 'taskbar-icon';
+        if (spriteId && SPRITES[spriteId]) {
+          renderSprite(icon, spriteId, 2);
+        } else {
+          var ctx = icon.getContext('2d');
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label.charAt(0).toUpperCase(), 8, 8);
+        }
+        el.appendChild(icon);
       } else {
         el.textContent = label.charAt(0).toUpperCase();
       }

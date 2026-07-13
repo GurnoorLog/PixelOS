@@ -296,6 +296,7 @@ body[data-theme="night"] #rain-canvas {
 }
 .taskbar-app.active {
   border-color: var(--accent);
+  background: rgba(192,132,252,0.12);
 }
 .taskbar-app.active::after {
   content: '';
@@ -307,6 +308,10 @@ body[data-theme="night"] #rain-canvas {
   height: 2px;
   background: var(--accent);
   border-radius: 1px;
+}
+.taskbar-icon {
+  image-rendering: pixelated;
+  display: block;
 }
 
 #theme-toggle {
